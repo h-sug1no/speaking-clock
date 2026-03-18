@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Speaking Clock - Minimal Voice Announcer</title>
     <style>
+        /* モダンなグラスモーフィズム・デザイン */
         :root {
             --bg-color: #0f0f0f;
             --accent-color: #007aff;
@@ -18,6 +19,7 @@
             --input-text: #ffffff;
         }
 
+        /* サイバーマトリックス・テーマ */
         .theme-cyberpunk {
             --bg-color: #020617;
             --accent-color: #22c55e;
@@ -31,6 +33,7 @@
             --input-text: #22c55e;
         }
 
+        /* ピュアホワイト・テーマ */
         .theme-soft {
             --bg-color: #f8fafc;
             --accent-color: #f43f5e;
@@ -50,7 +53,7 @@
             height: 100%;
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
             overflow: hidden;
             transition: background-color 0.5s ease;
         }
@@ -63,169 +66,436 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            transition: background 0.5s ease;
+            position: relative;
         }
 
         .timer-card {
             background: var(--card-bg);
             backdrop-filter: blur(30px);
-            padding: 40px;
+            -webkit-backdrop-filter: blur(30px);
+            padding: 30px;
             border-radius: 28px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.12);
             width: 100%;
-            max-width: 500px;
-            text-align: center;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            max-width: 480px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
+            z-index: 1;
+            cursor: default;
+            overflow: hidden;
         }
 
-        .date-display {
-            font-size: 24px;
-            opacity: 0.7;
-            margin-bottom: 10px;
+        /* 設定非表示時の拡大レイアウト */
+        .timer-card:has(#settingsBody.collapsed) {
+            max-width: 620px;
+            padding: 60px 40px;
         }
 
-        .clock-display {
-            font-size: 80px;
-            font-weight: bold;
-            color: var(--clock-color);
-            margin-bottom: 30px;
-            font-variant-numeric: tabular-nums;
+        .timer-card.is-speaking {
+            transform: scale(1.03);
+            box-shadow: 0 40px 80px rgba(0, 122, 255, 0.3);
+            border-color: var(--accent-color);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--accent-color);
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 122, 255, 0.1);
+        }
+
+        .status-badge.speaking {
+            background: var(--accent-color);
+            color: #fff;
+            box-shadow: 0 0 15px var(--accent-color);
         }
 
         .settings-toggle {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
-            padding: 10px 20px;
+            background: rgba(128, 128, 128, 0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-color);
+            padding: 10px 18px;
             border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             cursor: pointer;
-            font-size: 14px;
+            transition: background 0.2s, transform 0.1s;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .date-display {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-color);
+            opacity: 0.8;
+            letter-spacing: 0.05em;
+            margin-bottom: 0px;
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
+
+        .timer-card:has(#settingsBody.collapsed) .date-display {
+            font-size: 44px;
+            margin-bottom: 12px;
+            opacity: 1;
+        }
+
+        .clock-display {
+            font-size: 88px;
+            font-weight: 500;
+            text-align: center;
+            margin: 0px 0 30px;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+            color: var(--clock-color);
+            text-shadow: 0 0 15px rgba(0,0,0,0.1);
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
+
+        .timer-card:has(#settingsBody.collapsed) .clock-display {
+            font-size: 140px;
+            margin: 15px 0 15px;
+            font-weight: 400;
+            letter-spacing: -4px;
         }
 
         #settingsBody {
-            margin-top: 20px;
-            text-align: left;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            padding-top: 20px;
-            display: block;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out, opacity 0.3s ease-in-out;
+            max-height: 2000px;
+            opacity: 1;
+            position: relative;
+            z-index: 10;
         }
 
         #settingsBody.collapsed {
-            display: none;
+            max-height: 0 !important;
+            opacity: 0 !important;
+            pointer-events: none;
         }
 
-        .control-group {
-            margin-bottom: 15px;
+        .control-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
+            margin-top: 10px;
+        }
+
+        .settings-panel {
+            background: rgba(0,0,0,0.1);
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 10px;
         }
 
         label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-color);
+            opacity: 0.6;
+            margin-bottom: 6px;
             display: block;
-            font-size: 12px;
-            margin-bottom: 5px;
-            opacity: 0.8;
         }
 
-        select, input, textarea {
-            width: 100%;
+        select, textarea, input {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--input-text);
-            padding: 8px;
+            padding: 10px;
             border-radius: 8px;
-            box-sizing: border-box;
+            width: 100%;
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s ease;
         }
 
-        .test-btn {
+        .dual-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        #ambientTestTrigger {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            padding: 15px;
-            margin-top: 10px;
-            background: var(--accent-color);
+            height: 100%;
+            background: transparent;
             border: none;
-            color: white;
-            border-radius: 12px;
-            font-weight: bold;
             cursor: pointer;
+            z-index: 0;
+            outline: none;
+        }
+
+        /* 画面クリック時の波紋エフェクト */
+        .ripple {
+            position: absolute;
+            background: var(--accent-color);
+            opacity: 0.4;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-effect 0.6s linear;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        @keyframes ripple-effect {
+            to { transform: scale(4); opacity: 0; }
         }
     </style>
 </head>
 <body id="rootBody">
-    <div class="app-container">
-        <div class="timer-card">
-            <div id="dateDisplay" class="date-display">----.--.-- (---)</div>
-            <div id="clock" class="clock-display">00:00:00</div>
-            
-            <button class="settings-toggle" onclick="toggleSettings()">設定を切り替え ⚙️</button>
-            
-            <div id="settingsBody" class="">
-                <div class="control-group">
-                    <label>テーマ</label>
-                    <select id="themeSelect" onchange="applyTheme(this.value)">
-                        <option value="default">Midnight</option>
-                        <option value="theme-cyberpunk">Cyber Matrix</option>
-                        <option value="theme-soft">Pure White</option>
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <label>日本語読み上げテンプレート</label>
-                    <textarea id="templateJa">{h}時{m}分{s}秒です</textarea>
-                </div>
-                
-                <div class="control-group">
-                    <label>英語読み上げテンプレート</label>
-                    <textarea id="templateEn">It's {h} {m} and {s} seconds.</textarea>
-                </div>
 
-                <button class="test-btn" onclick="runTest()">今すぐテスト再生 🔊</button>
+    <div class="app-container" id="mainBg">
+        <div class="timer-card" id="timerCard">
+            <!-- テスト再生トリガー -->
+            <button id="ambientTestTrigger" title="クリックしてテスト再生"></button>
+
+            <div class="card-header">
+                <div class="status-badge" id="statusBadge">Active</div>
+                <button class="settings-toggle" id="toggleSettings">
+                    <span id="toggleText">Show Settings</span> ⚙️
+                </button>
+            </div>
+            
+            <div class="date-display" id="dateDisplay">----.--.-- (---)</div>
+            <div class="clock-display" id="clock">00:00:00</div>
+
+            <div id="settingsBody">
+                <div class="control-section">
+                    <div class="dual-grid">
+                        <div class="control-group">
+                            <label>テーマ</label>
+                            <select id="themeSelect">
+                                <option value="default">Midnight</option>
+                                <option value="theme-cyberpunk">Cyber Matrix</option>
+                                <option value="theme-soft">Pure White</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>音量: <span id="volValue">80%</span></label>
+                            <input type="range" id="volInput" min="0" max="1" step="0.05" value="0.8">
+                        </div>
+                    </div>
+
+                    <div class="settings-panel">
+                        <label style="color: var(--accent-color);">English Voice</label>
+                        <div class="dual-grid">
+                            <select id="voiceSelectEn"></select>
+                            <input type="number" id="rateInputEn" min="0.5" max="2.0" step="0.1" value="1.0">
+                        </div>
+                        <textarea id="templateEn" style="margin-top:8px">It's {h} {m} and {s} seconds.</textarea>
+                    </div>
+
+                    <div class="settings-panel">
+                        <label style="color: var(--accent-color);">日本語音声</label>
+                        <div class="dual-grid">
+                            <select id="voiceSelectJa"></select>
+                            <input type="number" id="rateInputJa" min="0.5" max="2.0" step="0.1" value="1.0">
+                        </div>
+                        <textarea id="templateJa" style="margin-top:8px">{h}時{m}分{s}秒です</textarea>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        // 設定
+        const targetMinutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+        const targetSeconds = [0, 30]; 
         const synth = window.speechSynthesis;
+        let allVoices = []; 
+        const STORAGE_KEY = 'speaking_clock_v1_final';
 
-        function toggleSettings() {
-            document.getElementById('settingsBody').classList.toggle('collapsed');
+        let lastAnnouncedTime = ""; 
+        const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+
+        function applyTheme(themeName) {
+            const body = document.getElementById('rootBody');
+            body.className = (themeName === 'default') ? '' : themeName;
         }
 
-        function applyTheme(theme) {
-            document.getElementById('rootBody').className = theme === 'default' ? '' : theme;
+        function saveSettings() {
+            const isCollapsed = document.getElementById('settingsBody').classList.contains('collapsed');
+            const data = {
+                theme: document.getElementById('themeSelect').value,
+                vol: document.getElementById('volInput').value,
+                vEn: document.getElementById('voiceSelectEn').value,
+                vJa: document.getElementById('voiceSelectJa').value,
+                tEn: document.getElementById('templateEn').value,
+                tJa: document.getElementById('templateJa').value,
+                rEn: document.getElementById('rateInputEn').value,
+                rJa: document.getElementById('rateInputJa').value,
+                isCollapsed: isCollapsed
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
 
-        function announce(h, m, s) {
+        function loadSettings() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            const s = raw ? JSON.parse(raw) : {
+                theme: 'default', vol: 0.8,
+                tEn: "It's {h} {m} and {s} seconds.",
+                tJa: "{h}時{m}分{s}秒です",
+                rEn: 1.0, rJa: 1.0, isCollapsed: true
+            };
+            
+            document.getElementById('themeSelect').value = s.theme;
+            document.getElementById('volInput').value = s.vol;
+            document.getElementById('templateEn').value = s.tEn;
+            document.getElementById('templateJa').value = s.tJa;
+            document.getElementById('rateInputEn').value = s.rEn;
+            document.getElementById('rateInputJa').value = s.rJa;
+            
+            applyTheme(s.theme);
+            document.getElementById('volValue').textContent = `${Math.round(s.vol * 100)}%`;
+
+            const body = document.getElementById('settingsBody');
+            const btnText = document.getElementById('toggleText');
+            if (s.isCollapsed) {
+                body.classList.add('collapsed');
+                btnText.textContent = "Show Settings";
+            } else {
+                body.classList.remove('collapsed');
+                btnText.textContent = "Hide Settings";
+            }
+
+            window._tmpVEn = s.vEn;
+            window._tmpVJa = s.vJa;
+        }
+
+        function setupVoices() {
+            allVoices = synth.getVoices();
+            if (allVoices.length === 0) return;
+            const enSel = document.getElementById('voiceSelectEn');
+            const jaSel = document.getElementById('voiceSelectJa');
+            
+            const fEn = allVoices.map((v, i) => ({v, i})).filter(x => x.v.lang.includes('en-'));
+            const fJa = allVoices.map((v, i) => ({v, i})).filter(x => x.v.lang.includes('ja-'));
+            
+            enSel.innerHTML = fEn.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
+            jaSel.innerHTML = fJa.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
+            
+            if (window._tmpVEn !== undefined) enSel.value = window._tmpVEn;
+            if (window._tmpVJa !== undefined) jaSel.value = window._tmpVJa;
+        }
+
+        function createRipple(e) {
+            const container = document.getElementById('timerCard');
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            const rect = container.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = `${size}px`;
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            container.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        }
+
+        function announce(h, m, s, isManual = false) {
+            const currentTimeKey = `${h}:${m}:${s}`;
+            if (!isManual && lastAnnouncedTime === currentTimeKey) return;
+            lastAnnouncedTime = currentTimeKey;
+
             synth.cancel();
-            const tJa = document.getElementById('templateJa').value.replace('{h}', h).replace('{m}', m).replace('{s}', s);
-            const tEn = document.getElementById('templateEn').value.replace('{h}', h).replace('{m}', m).replace('{s}', s);
+            const vol = parseFloat(document.getElementById('volInput').value);
+            const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
+            
+            const card = document.getElementById('timerCard');
+            const badge = document.getElementById('statusBadge');
+            card.classList.add('is-speaking');
+            badge.textContent = "Speaking...";
+            badge.classList.add('speaking');
 
-            const uEn = new SpeechSynthesisUtterance(tEn);
-            uEn.lang = 'en-US';
-            const uJa = new SpeechSynthesisUtterance(tJa);
-            uJa.lang = 'ja-JP';
+            const uEn = new SpeechSynthesisUtterance(processTemplate(document.getElementById('templateEn').value));
+            uEn.voice = allVoices[document.getElementById('voiceSelectEn').value];
+            uEn.rate = parseFloat(document.getElementById('rateInputEn').value);
+            uEn.volume = vol;
 
-            uEn.onend = () => synth.speak(uJa);
+            const uJa = new SpeechSynthesisUtterance(processTemplate(document.getElementById('templateJa').value));
+            uJa.voice = allVoices[document.getElementById('voiceSelectJa').value];
+            uJa.rate = parseFloat(document.getElementById('rateInputJa').value);
+            uJa.volume = vol;
+
+            uJa.onend = () => {
+                card.classList.remove('is-speaking');
+                badge.textContent = "Active";
+                badge.classList.remove('speaking');
+            };
+            uEn.onend = () => { setTimeout(() => synth.speak(uJa), 300); };
             synth.speak(uEn);
         }
 
-        function runTest() {
-            const d = new Date();
-            announce(d.getHours(), d.getMinutes(), d.getSeconds());
-        }
+        document.getElementById('themeSelect').onchange = (e) => {
+            applyTheme(e.target.value);
+            saveSettings();
+        };
+
+        document.getElementById('toggleSettings').onclick = (e) => {
+            e.stopPropagation();
+            const body = document.getElementById('settingsBody');
+            const btnText = document.getElementById('toggleText');
+            body.classList.toggle('collapsed');
+            btnText.textContent = body.classList.contains('collapsed') ? "Show Settings" : "Hide Settings";
+            saveSettings();
+        };
 
         function tick() {
             const now = new Date();
             const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-            
             document.getElementById('dateDisplay').textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
             document.getElementById('clock').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-            
-            // 5分おき、かつ30秒ごとに読み上げ（テスト用）
-            if ((m % 5 === 0) && (s === 0 || s === 30)) {
-                announce(h, m, s);
-            }
+            if (targetMinutes.includes(m) && targetSeconds.includes(s)) announce(h, m, s);
             requestAnimationFrame(tick);
         }
 
+        window.speechSynthesis.onvoiceschanged = setupVoices;
+        const runTest = (e) => {
+            if (e && e.clientX) createRipple(e);
+            const d = new Date();
+            announce(d.getHours(), d.getMinutes(), d.getSeconds(), true);
+        };
+        document.getElementById('ambientTestTrigger').onclick = runTest;
+        document.getElementById('volInput').oninput = (e) => {
+            document.getElementById('volValue').textContent = `${Math.round(e.target.value * 100)}%`;
+            saveSettings();
+        };
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            if (el.id !== 'themeSelect') el.addEventListener('input', saveSettings);
+            el.addEventListener('click', (e) => e.stopPropagation());
+        });
+
+        loadSettings();
+        setupVoices();
         requestAnimationFrame(tick);
     </script>
 </body>
