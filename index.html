@@ -58,6 +58,40 @@
             transition: background-color 0.5s ease;
         }
 
+        #startupOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        #startupButton {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 122, 255, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #startupButton:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 122, 255, 0.5);
+        }
+
         .app-container {
             display: flex;
             height: 100vh;
@@ -87,7 +121,6 @@
             overflow: hidden;
         }
 
-        /* 設定非表示時の拡大レイアウト */
         .timer-card:has(#settingsBody.collapsed) {
             max-width: 620px;
             padding: 60px 40px;
@@ -252,7 +285,6 @@
             outline: none;
         }
 
-        /* 画面クリック時の波紋エフェクト */
         .ripple {
             position: absolute;
             background: var(--accent-color);
@@ -271,26 +303,26 @@
 </head>
 <body id="rootBody">
 
+    <div id="startupOverlay">
+        <button id="startupButton">Start Clock</button>
+    </div>
+
     <div class="app-container" id="mainBg">
         <div class="timer-card" id="timerCard">
-            <!-- テスト再生トリガー -->
-            <button id="ambientTestTrigger" title="クリックしてテスト再生"></button>
-
+            <button id="ambientTestTrigger" title="Click to test playback"></button>
             <div class="card-header">
                 <div class="status-badge" id="statusBadge">Active</div>
                 <button class="settings-toggle" id="toggleSettings">
                     <span id="toggleText">Show Settings</span> ⚙️
                 </button>
             </div>
-            
             <div class="date-display" id="dateDisplay">----.--.-- (---)</div>
             <div class="clock-display" id="clock">00:00:00</div>
-
             <div id="settingsBody">
                 <div class="control-section">
                     <div class="dual-grid">
                         <div class="control-group">
-                            <label>テーマ</label>
+                            <label>Theme</label>
                             <select id="themeSelect">
                                 <option value="default">Midnight</option>
                                 <option value="theme-cyberpunk">Cyber Matrix</option>
@@ -298,11 +330,10 @@
                             </select>
                         </div>
                         <div class="control-group">
-                            <label>音量: <span id="volValue">80%</span></label>
+                            <label>Volume: <span id="volValue">80%</span></label>
                             <input type="range" id="volInput" min="0" max="1" step="0.05" value="0.8">
                         </div>
                     </div>
-
                     <div class="settings-panel">
                         <label style="color: var(--accent-color);">English Voice</label>
                         <div class="dual-grid">
@@ -311,9 +342,8 @@
                         </div>
                         <textarea id="templateEn" style="margin-top:8px">It's {h} {m} and {s} seconds.</textarea>
                     </div>
-
                     <div class="settings-panel">
-                        <label style="color: var(--accent-color);">日本語音声</label>
+                        <label style="color: var(--accent-color);">Japanese Voice</label>
                         <div class="dual-grid">
                             <select id="voiceSelectJa"></select>
                             <input type="number" id="rateInputJa" min="0.5" max="2.0" step="0.1" value="1.0">
@@ -326,32 +356,53 @@
     </div>
 
     <script>
-        // 設定
-        const targetMinutes = [0, 7, 15, 22, 30, 37, 45, 52];
-        const targetSeconds = [0, 30]; 
-        const synth = window.speechSynthesis;
-        let allVoices = []; 
-        const STORAGE_KEY = 'speaking_clock_v1_final';
+        // --- DOM Elements ---
+        const startupOverlay = document.getElementById('startupOverlay');
+        const startupButton = document.getElementById('startupButton');
+        const rootBody = document.getElementById('rootBody');
+        const timerCard = document.getElementById('timerCard');
+        const statusBadge = document.getElementById('statusBadge');
+        const toggleSettingsBtn = document.getElementById('toggleSettings');
+        const toggleText = document.getElementById('toggleText');
+        const dateDisplay = document.getElementById('dateDisplay');
+        const clockDisplay = document.getElementById('clock');
+        const settingsBody = document.getElementById('settingsBody');
+        const themeSelect = document.getElementById('themeSelect');
+        const volInput = document.getElementById('volInput');
+        const volValue = document.getElementById('volValue');
+        const voiceSelectEn = document.getElementById('voiceSelectEn');
+        const rateInputEn = document.getElementById('rateInputEn');
+        const templateEn = document.getElementById('templateEn');
+        const voiceSelectJa = document.getElementById('voiceSelectJa');
+        const rateInputJa = document.getElementById('rateInputJa');
+        const templateJa = document.getElementById('templateJa');
+        const ambientTestTrigger = document.getElementById('ambientTestTrigger');
 
-        let lastAnnouncedTime = ""; 
+        // --- Settings & State ---
+        const targetMinutes = [0, 7, 15, 22, 30, 37, 45, 52];
+        const targetSeconds = [0, 30];
+        const synth = window.speechSynthesis;
+        let allVoices = [];
+        const STORAGE_KEY = 'speaking_clock_v1_final';
+        let lastAnnouncedTime = "";
         const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
+        // --- Functions ---
         function applyTheme(themeName) {
-            const body = document.getElementById('rootBody');
-            body.className = (themeName === 'default') ? '' : themeName;
+            rootBody.className = (themeName === 'default') ? '' : themeName;
         }
 
         function saveSettings() {
-            const isCollapsed = document.getElementById('settingsBody').classList.contains('collapsed');
+            const isCollapsed = settingsBody.classList.contains('collapsed');
             const data = {
-                theme: document.getElementById('themeSelect').value,
-                vol: document.getElementById('volInput').value,
-                vEn: document.getElementById('voiceSelectEn').value,
-                vJa: document.getElementById('voiceSelectJa').value,
-                tEn: document.getElementById('templateEn').value,
-                tJa: document.getElementById('templateJa').value,
-                rEn: document.getElementById('rateInputEn').value,
-                rJa: document.getElementById('rateInputJa').value,
+                theme: themeSelect.value,
+                vol: volInput.value,
+                vEn: voiceSelectEn.value,
+                vJa: voiceSelectJa.value,
+                tEn: templateEn.value,
+                tJa: templateJa.value,
+                rEn: rateInputEn.value,
+                rJa: rateInputJa.value,
                 isCollapsed: isCollapsed
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -366,24 +417,22 @@
                 rEn: 1.0, rJa: 1.0, isCollapsed: true
             };
             
-            document.getElementById('themeSelect').value = s.theme;
-            document.getElementById('volInput').value = s.vol;
-            document.getElementById('templateEn').value = s.tEn;
-            document.getElementById('templateJa').value = s.tJa;
-            document.getElementById('rateInputEn').value = s.rEn;
-            document.getElementById('rateInputJa').value = s.rJa;
+            themeSelect.value = s.theme;
+            volInput.value = s.vol;
+            templateEn.value = s.tEn;
+            templateJa.value = s.tJa;
+            rateInputEn.value = s.rEn;
+            rateInputJa.value = s.rJa;
             
             applyTheme(s.theme);
-            document.getElementById('volValue').textContent = `${Math.round(s.vol * 100)}%`;
+            volValue.textContent = `${Math.round(s.vol * 100)}%`;
 
-            const body = document.getElementById('settingsBody');
-            const btnText = document.getElementById('toggleText');
             if (s.isCollapsed) {
-                body.classList.add('collapsed');
-                btnText.textContent = "Show Settings";
+                settingsBody.classList.add('collapsed');
+                toggleText.textContent = "Show Settings";
             } else {
-                body.classList.remove('collapsed');
-                btnText.textContent = "Hide Settings";
+                settingsBody.classList.remove('collapsed');
+                toggleText.textContent = "Hide Settings";
             }
 
             window._tmpVEn = s.vEn;
@@ -393,31 +442,28 @@
         function setupVoices() {
             allVoices = synth.getVoices();
             if (allVoices.length === 0) return;
-            const enSel = document.getElementById('voiceSelectEn');
-            const jaSel = document.getElementById('voiceSelectJa');
-            
+
             const fEn = allVoices.map((v, i) => ({v, i})).filter(x => x.v.lang.includes('en-'));
             const fJa = allVoices.map((v, i) => ({v, i})).filter(x => x.v.lang.includes('ja-'));
             
-            enSel.innerHTML = fEn.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
-            jaSel.innerHTML = fJa.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
+            voiceSelectEn.innerHTML = fEn.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
+            voiceSelectJa.innerHTML = fJa.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
             
-            if (window._tmpVEn !== undefined) enSel.value = window._tmpVEn;
-            if (window._tmpVJa !== undefined) jaSel.value = window._tmpVJa;
+            if (window._tmpVEn !== undefined) voiceSelectEn.value = window._tmpVEn;
+            if (window._tmpVJa !== undefined) voiceSelectJa.value = window._tmpVJa;
         }
 
         function createRipple(e) {
-            const container = document.getElementById('timerCard');
             const ripple = document.createElement('span');
             ripple.classList.add('ripple');
-            const rect = container.getBoundingClientRect();
+            const rect = timerCard.getBoundingClientRect();
             const size = Math.max(rect.width, rect.height);
             ripple.style.width = ripple.style.height = `${size}px`;
             const x = e.clientX - rect.left - size / 2;
             const y = e.clientY - rect.top - size / 2;
             ripple.style.left = `${x}px`;
             ripple.style.top = `${y}px`;
-            container.appendChild(ripple);
+            timerCard.appendChild(ripple);
             setTimeout(() => ripple.remove(), 600);
         }
 
@@ -427,76 +473,98 @@
             lastAnnouncedTime = currentTimeKey;
 
             synth.cancel();
-            const vol = parseFloat(document.getElementById('volInput').value);
+            const vol = parseFloat(volInput.value);
             const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
             
-            const card = document.getElementById('timerCard');
-            const badge = document.getElementById('statusBadge');
-            card.classList.add('is-speaking');
-            badge.textContent = "Speaking...";
-            badge.classList.add('speaking');
+            timerCard.classList.add('is-speaking');
+            statusBadge.textContent = "Speaking...";
+            statusBadge.classList.add('speaking');
 
-            const uEn = new SpeechSynthesisUtterance(processTemplate(document.getElementById('templateEn').value));
-            uEn.voice = allVoices[document.getElementById('voiceSelectEn').value];
-            uEn.rate = parseFloat(document.getElementById('rateInputEn').value);
+            const uEn = new SpeechSynthesisUtterance(processTemplate(templateEn.value));
+            uEn.voice = allVoices[voiceSelectEn.value];
+            uEn.rate = parseFloat(rateInputEn.value);
             uEn.volume = vol;
 
-            const uJa = new SpeechSynthesisUtterance(processTemplate(document.getElementById('templateJa').value));
-            uJa.voice = allVoices[document.getElementById('voiceSelectJa').value];
-            uJa.rate = parseFloat(document.getElementById('rateInputJa').value);
+            const uJa = new SpeechSynthesisUtterance(processTemplate(templateJa.value));
+            uJa.voice = allVoices[voiceSelectJa.value];
+            uJa.rate = parseFloat(rateInputJa.value);
             uJa.volume = vol;
 
             uJa.onend = () => {
-                card.classList.remove('is-speaking');
-                badge.textContent = "Active";
-                badge.classList.remove('speaking');
+                timerCard.classList.remove('is-speaking');
+                statusBadge.textContent = "Active";
+                statusBadge.classList.remove('speaking');
             };
             uEn.onend = () => { setTimeout(() => synth.speak(uJa), 300); };
             synth.speak(uEn);
         }
 
-        document.getElementById('themeSelect').onchange = (e) => {
-            applyTheme(e.target.value);
-            saveSettings();
-        };
-
-        document.getElementById('toggleSettings').onclick = (e) => {
-            e.stopPropagation();
-            const body = document.getElementById('settingsBody');
-            const btnText = document.getElementById('toggleText');
-            body.classList.toggle('collapsed');
-            btnText.textContent = body.classList.contains('collapsed') ? "Show Settings" : "Hide Settings";
-            saveSettings();
-        };
-
         function tick() {
             const now = new Date();
             const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-            document.getElementById('dateDisplay').textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
-            document.getElementById('clock').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            dateDisplay.textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
+            clockDisplay.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             if (targetMinutes.includes(m) && targetSeconds.includes(s)) announce(h, m, s);
             requestAnimationFrame(tick);
         }
 
-        window.speechSynthesis.onvoiceschanged = setupVoices;
-        const runTest = (e) => {
+        function runTest(e) {
             if (e && e.clientX) createRipple(e);
             const d = new Date();
             announce(d.getHours(), d.getMinutes(), d.getSeconds(), true);
-        };
-        document.getElementById('ambientTestTrigger').onclick = runTest;
-        document.getElementById('volInput').oninput = (e) => {
-            document.getElementById('volValue').textContent = `${Math.round(e.target.value * 100)}%`;
-            saveSettings();
-        };
-        document.querySelectorAll('input, select, textarea').forEach(el => {
-            if (el.id !== 'themeSelect') el.addEventListener('input', saveSettings);
-            el.addEventListener('click', (e) => e.stopPropagation());
-        });
+        }
 
-        loadSettings();
-        setupVoices();
-        requestAnimationFrame(tick);
+        function main() {
+            // Event Listeners
+            themeSelect.onchange = (e) => {
+                applyTheme(e.target.value);
+                saveSettings();
+            };
+
+            toggleSettingsBtn.onclick = (e) => {
+                e.stopPropagation();
+                settingsBody.classList.toggle('collapsed');
+                toggleText.textContent = settingsBody.classList.contains('collapsed') ? "Show Settings" : "Hide Settings";
+                saveSettings();
+            };
+
+            ambientTestTrigger.onclick = runTest;
+            volInput.oninput = (e) => {
+                volValue.textContent = `${Math.round(e.target.value * 100)}%`;
+                saveSettings();
+            };
+
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.id !== 'themeSelect') el.addEventListener('input', saveSettings);
+                el.addEventListener('click', (e) => e.stopPropagation());
+            });
+
+            // Initial Load
+            loadSettings();
+            setupVoices();
+            if (synth.onvoiceschanged !== undefined) {
+                synth.onvoiceschanged = setupVoices;
+            }
+            requestAnimationFrame(tick);
+        }
+
+        // --- App Starter ---
+        startupButton.addEventListener('click', () => {
+            // Unlock audio context
+            synth.cancel();
+            const dummyUtterance = new SpeechSynthesisUtterance(' ');
+            dummyUtterance.volume = 0;
+            synth.speak(dummyUtterance);
+            
+            // Hide overlay
+            startupOverlay.style.opacity = '0';
+            setTimeout(() => {
+                startupOverlay.style.display = 'none';
+            }, 500);
+
+            // Start the main application
+            main();
+        });
     </script>
 </body>
 </html>
