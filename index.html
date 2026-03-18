@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaking Clock - Minimal Voice Announcer</title>
+    <style>
+        :root {
+            --bg-color: #0f0f0f;
+            --accent-color: #007aff;
+            --text-color: #e0e0e0;
+            --border-color: #333;
+            --card-bg: rgba(30, 30, 30, 0.85);
+            --grad-start: #1a1a2e;
+            --grad-end: #0f0f0f;
+            --clock-color: #ffffff;
+            --input-bg: #2a2a2a;
+            --input-text: #ffffff;
+        }
+
+        .theme-cyberpunk {
+            --bg-color: #020617;
+            --accent-color: #22c55e;
+            --text-color: #f0fdf4;
+            --card-bg: rgba(15, 23, 42, 0.9);
+            --grad-start: #064e3b;
+            --grad-end: #020617;
+            --clock-color: #22c55e;
+            --border-color: #065f46;
+            --input-bg: #0f172a;
+            --input-text: #22c55e;
+        }
+
+        .theme-soft {
+            --bg-color: #f8fafc;
+            --accent-color: #f43f5e;
+            --text-color: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --grad-start: #ffe4e6;
+            --grad-end: #f8fafc;
+            --clock-color: #0f172a;
+            --border-color: #e2e8f0;
+            --input-bg: #ffffff;
+            --input-text: #0f172a;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            background: radial-gradient(circle at 50% 50%, var(--grad-start) 0%, var(--grad-end) 100%);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .timer-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(30px);
+            padding: 40px;
+            border-radius: 28px;
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .date-display {
+            font-size: 24px;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+
+        .clock-display {
+            font-size: 80px;
+            font-weight: bold;
+            color: var(--clock-color);
+            margin-bottom: 30px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .settings-toggle {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #settingsBody {
+            margin-top: 20px;
+            text-align: left;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
+            display: block;
+        }
+
+        #settingsBody.collapsed {
+            display: none;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--input-text);
+            padding: 8px;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .test-btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 10px;
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body id="rootBody">
+    <div class="app-container">
+        <div class="timer-card">
+            <div id="dateDisplay" class="date-display">----.--.-- (---)</div>
+            <div id="clock" class="clock-display">00:00:00</div>
+            
+            <button class="settings-toggle" onclick="toggleSettings()">設定を切り替え ⚙️</button>
+            
+            <div id="settingsBody" class="">
+                <div class="control-group">
+                    <label>テーマ</label>
+                    <select id="themeSelect" onchange="applyTheme(this.value)">
+                        <option value="default">Midnight</option>
+                        <option value="theme-cyberpunk">Cyber Matrix</option>
+                        <option value="theme-soft">Pure White</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>日本語読み上げテンプレート</label>
+                    <textarea id="templateJa">{h}時{m}分{s}秒です</textarea>
+                </div>
+                
+                <div class="control-group">
+                    <label>英語読み上げテンプレート</label>
+                    <textarea id="templateEn">It's {h} {m} and {s} seconds.</textarea>
+                </div>
+
+                <button class="test-btn" onclick="runTest()">今すぐテスト再生 🔊</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        const synth = window.speechSynthesis;
+
+        function toggleSettings() {
+            document.getElementById('settingsBody').classList.toggle('collapsed');
+        }
+
+        function applyTheme(theme) {
+            document.getElementById('rootBody').className = theme === 'default' ? '' : theme;
+        }
+
+        function announce(h, m, s) {
+            synth.cancel();
+            const tJa = document.getElementById('templateJa').value.replace('{h}', h).replace('{m}', m).replace('{s}', s);
+            const tEn = document.getElementById('templateEn').value.replace('{h}', h).replace('{m}', m).replace('{s}', s);
+
+            const uEn = new SpeechSynthesisUtterance(tEn);
+            uEn.lang = 'en-US';
+            const uJa = new SpeechSynthesisUtterance(tJa);
+            uJa.lang = 'ja-JP';
+
+            uEn.onend = () => synth.speak(uJa);
+            synth.speak(uEn);
+        }
+
+        function runTest() {
+            const d = new Date();
+            announce(d.getHours(), d.getMinutes(), d.getSeconds());
+        }
+
+        function tick() {
+            const now = new Date();
+            const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+            
+            document.getElementById('dateDisplay').textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
+            document.getElementById('clock').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            
+            // 5分おき、かつ30秒ごとに読み上げ（テスト用）
+            if ((m % 5 === 0) && (s === 0 || s === 30)) {
+                announce(h, m, s);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        requestAnimationFrame(tick);
+    </script>
+</body>
+</html>
