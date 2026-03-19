@@ -17,6 +17,7 @@
             --clock-color: #ffffff;
             --input-bg: #2a2a2a;
             --input-text: #ffffff;
+            --error-color: #ff3b30;
         }
 
         /* サイバーマトリックス・テーマ */
@@ -308,18 +309,20 @@
             z-index: 5;
         }
 
+        #wakeLockStatus {
+            font-size: 9px;
+            color: var(--error-color);
+            margin-top: 4px;
+            display: none;
+        }
+
         @keyframes ripple-effect {
             to { transform: scale(4); opacity: 0; }
         }
 
-        /* モバイル対応の微調整 */
         @media (max-width: 480px) {
-            .timer-card {
-                padding: 20px;
-            }
-            .dual-grid {
-                grid-template-columns: 1fr;
-            }
+            .timer-card { padding: 20px; }
+            .dual-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -356,12 +359,15 @@
                             <input type="range" id="volInput" min="0" max="2" step="0.05" value="0.8">
                         </div>
                     </div>
-                     <div id="wakeLockControl" class="control-group">
+                    
+                    <div id="wakeLockGroup" class="control-group">
                         <label for="wakeLockCheckbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; justify-content: space-between;">
                             Keep Screen On
                             <input type="checkbox" id="wakeLockCheckbox" style="width: auto; height: 20px; accent-color: var(--accent-color);">
                         </label>
+                        <div id="wakeLockStatus">Permission denied by browser environment.</div>
                     </div>
+
                     <div class="settings-panel" id="panelEn">
                         <label style="color: var(--accent-color);">English Voice</label>
                         <div class="dual-grid">
@@ -420,12 +426,11 @@
         const templateJa = document.getElementById('templateJa');
         const ambientTestTrigger = document.getElementById('ambientTestTrigger');
         const wakeLockCheckbox = document.getElementById('wakeLockCheckbox');
-        const wakeLockControl = document.getElementById('wakeLockControl');
+        const wakeLockStatus = document.getElementById('wakeLockStatus');
         const testSpeakEnBtn = document.getElementById('testSpeakEn');
         const testSpeakJaBtn = document.getElementById('testSpeakJa');
         const panelEn = document.getElementById('panelEn');
         const panelJa = document.getElementById('panelJa');
-
 
         // --- Settings & State ---
         const targetMinutes = [0, 7, 15, 22, 30, 37, 45, 52];
@@ -439,24 +444,23 @@
 
         // --- Functions ---
         const requestWakeLock = async () => {
-            if (!('wakeLock' in navigator)) {
-                console.warn('Wake Lock API not supported.');
-                return;
-            }
+            if (!('wakeLock' in navigator)) return;
             try {
                 wakeLock = await navigator.wakeLock.request('screen');
-                wakeLock.addEventListener('release', () => {
-                    wakeLock = null;
-                });
+                wakeLockStatus.style.display = 'none';
             } catch (err) {
-                console.error(`Wake Lock failed: ${err.name}, ${err.message}`);
+                console.warn('Wake Lock failed (likely due to iframe/permissions policy).');
+                wakeLockStatus.style.display = 'block';
                 wakeLockCheckbox.checked = false;
+                saveSettings();
             }
         };
 
         const releaseWakeLock = async () => {
             if (wakeLock) {
-                await wakeLock.release();
+                try {
+                    await wakeLock.release();
+                } catch(e) {}
                 wakeLock = null;
             }
         };
@@ -541,20 +545,6 @@
             if (window._tmpVJa !== undefined) voiceSelectJa.value = window._tmpVJa;
         }
 
-        function createRipple(e) {
-            const ripple = document.createElement('span');
-            ripple.classList.add('ripple');
-            const rect = timerCard.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height);
-            ripple.style.width = ripple.style.height = `${size}px`;
-            const x = e.clientX - rect.left - size / 2;
-            const y = e.clientY - rect.top - size / 2;
-            ripple.style.left = `${x}px`;
-            ripple.style.top = `${y}px`;
-            timerCard.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
-        }
-
         function testSpeak(lang) {
             synth.cancel();
 
@@ -609,7 +599,6 @@
 
             const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
             
-            // Only apply card-level animation for auto/ambient clicks
             timerCard.classList.add('is-speaking');
             statusBadge.textContent = "Speaking...";
             statusBadge.classList.add('speaking');
@@ -642,23 +631,12 @@
             requestAnimationFrame(tick);
         }
 
-        function runTest(e) {
-            if (e && e.clientX) createRipple(e);
-            const d = new Date();
-            announce(d.getHours(), d.getMinutes(), d.getSeconds(), true);
-        }
-
         function main() {
-            if (!('wakeLock' in navigator)) {
-                wakeLockControl.style.display = 'none';
-            }
-
-            const handleVisibilityChange = () => {
+            document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible' && wakeLockCheckbox.checked) {
                     requestWakeLock();
                 }
-            };
-            document.addEventListener('visibilitychange', handleVisibilityChange);
+            });
 
             wakeLockCheckbox.onchange = () => {
                 if (wakeLockCheckbox.checked) {
@@ -666,28 +644,28 @@
                 } else {
                     releaseWakeLock();
                 }
+                saveSettings();
             };
             
-            testSpeakEnBtn.onclick = (e) => {
-                e.stopPropagation();
-                testSpeak('en');
+            testSpeakEnBtn.onclick = (e) => { e.stopPropagation(); testSpeak('en'); };
+            testSpeakJaBtn.onclick = (e) => { e.stopPropagation(); testSpeak('ja'); };
+            ambientTestTrigger.onclick = (e) => {
+                const rect = timerCard.getBoundingClientRect();
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                const size = Math.max(rect.width, rect.height);
+                ripple.style.width = ripple.style.height = `${size}px`;
+                ripple.style.left = `${e.clientX - rect.left - size/2}px`;
+                ripple.style.top = `${e.clientY - rect.top - size/2}px`;
+                timerCard.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+                const d = new Date();
+                announce(d.getHours(), d.getMinutes(), d.getSeconds(), true);
             };
-             testSpeakJaBtn.onclick = (e) => {
-                e.stopPropagation();
-                testSpeak('ja');
-            };
-
-            ambientTestTrigger.onclick = runTest;
             
-            volInput.oninput = (e) => {
-                volValue.textContent = `${Math.round(e.target.value * 100)}%`;
-            };
-            volInputEn.oninput = (e) => {
-                volValueEn.textContent = `${Math.round(e.target.value * 100)}%`;
-            };
-            volInputJa.oninput = (e) => {
-                volValueJa.textContent = `${Math.round(e.target.value * 100)}%`;
-            };
+            volInput.oninput = (e) => volValue.textContent = `${Math.round(e.target.value * 100)}%`;
+            volInputEn.oninput = (e) => volValueEn.textContent = `${Math.round(e.target.value * 100)}%`;
+            volInputJa.oninput = (e) => volValueJa.textContent = `${Math.round(e.target.value * 100)}%`;
 
             document.querySelectorAll('input, select, textarea').forEach(el => {
                 el.addEventListener('change', saveSettings);
@@ -701,32 +679,19 @@
                 saveSettings();
             };
 
-            // Initial Load
             loadSettings();
             setupVoices();
-            if (synth.onvoiceschanged !== undefined) {
-                synth.onvoiceschanged = setupVoices;
-            }
+            if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = setupVoices;
             requestAnimationFrame(tick);
         }
 
-        // --- App Starter ---
-        startupButton.addEventListener('click', () => {
-            // Unlock audio context
+        startupButton.onclick = () => {
             synth.cancel();
-            const dummyUtterance = new SpeechSynthesisUtterance(' ');
-            dummyUtterance.volume = 0;
-            synth.speak(dummyUtterance);
-            
-            // Hide overlay
+            synth.speak(new SpeechSynthesisUtterance(' '));
             startupOverlay.style.opacity = '0';
-            setTimeout(() => {
-                startupOverlay.style.display = 'none';
-            }, 500);
-
-            // Start the main application
+            setTimeout(() => startupOverlay.style.display = 'none', 500);
             main();
-        });
+        };
     </script>
 </body>
 </html>
