@@ -254,7 +254,7 @@
             display: block;
         }
 
-        select, textarea, input {
+        select, textarea, input, .test-button {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--input-text);
@@ -264,6 +264,11 @@
             font-size: 13px;
             outline: none;
             transition: all 0.2s ease;
+        }
+
+        .test-button {
+            margin-top: 8px;
+            cursor: pointer;
         }
 
         .dual-grid {
@@ -351,6 +356,7 @@
                             <input type="range" id="volInputEn" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
                         <textarea id="templateEn" style="margin-top:8px">It's {h} {m} and {s} seconds.</textarea>
+                        <button id="testSpeakEn" class="test-button">Test Speak</button>
                     </div>
                     <div class="settings-panel">
                         <label style="color: var(--accent-color);">Japanese Voice</label>
@@ -363,6 +369,7 @@
                             <input type="range" id="volInputJa" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
                         <textarea id="templateJa" style="margin-top:8px">{h}時{m}分{s}秒です</textarea>
+                        <button id="testSpeakJa" class="test-button">Test Speak</button>
                     </div>
                 </div>
             </div>
@@ -397,6 +404,8 @@
         const ambientTestTrigger = document.getElementById('ambientTestTrigger');
         const wakeLockCheckbox = document.getElementById('wakeLockCheckbox');
         const wakeLockControl = document.getElementById('wakeLockControl');
+        const testSpeakEnBtn = document.getElementById('testSpeakEn');
+        const testSpeakJaBtn = document.getElementById('testSpeakJa');
 
 
         // --- Settings & State ---
@@ -527,6 +536,45 @@
             setTimeout(() => ripple.remove(), 600);
         }
 
+        function testSpeak(lang) {
+            synth.cancel();
+
+            const now = new Date();
+            const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+            const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
+            
+            const masterVol = parseFloat(volInput.value);
+
+            let utterance;
+            if (lang === 'en') {
+                const volEn = parseFloat(volInputEn.value);
+                utterance = new SpeechSynthesisUtterance(processTemplate(templateEn.value));
+                utterance.voice = allVoices[voiceSelectEn.value];
+                utterance.rate = parseFloat(rateInputEn.value);
+                utterance.volume = masterVol * volEn;
+            } else if (lang === 'ja') {
+                const volJa = parseFloat(volInputJa.value);
+                utterance = new SpeechSynthesisUtterance(processTemplate(templateJa.value));
+                utterance.voice = allVoices[voiceSelectJa.value];
+                utterance.rate = parseFloat(rateInputJa.value);
+                utterance.volume = masterVol * volJa;
+            }
+
+            if(utterance) {
+                utterance.onstart = () => {
+                    timerCard.classList.add('is-speaking');
+                    statusBadge.textContent = "Testing...";
+                    statusBadge.classList.add('speaking');
+                };
+                utterance.onend = () => {
+                    timerCard.classList.remove('is-speaking');
+                    statusBadge.textContent = "Active";
+                    statusBadge.classList.remove('speaking');
+                };
+                synth.speak(utterance);
+            }
+        }
+
         function announce(h, m, s, isManual = false) {
             const currentTimeKey = `${h}:${m}:${s}`;
             if (!isManual && lastAnnouncedTime === currentTimeKey) return;
@@ -597,6 +645,15 @@
                 }
             };
             
+            testSpeakEnBtn.onclick = (e) => {
+                e.stopPropagation();
+                testSpeak('en');
+            };
+             testSpeakJaBtn.onclick = (e) => {
+                e.stopPropagation();
+                testSpeak('ja');
+            };
+
             ambientTestTrigger.onclick = runTest;
             
             volInput.oninput = (e) => {
