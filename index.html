@@ -242,6 +242,12 @@
             border-radius: 16px;
             border: 1px solid rgba(255,255,255,0.05);
             margin-bottom: 10px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .settings-panel.is-testing {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 122, 255, 0.2);
         }
 
         label {
@@ -356,7 +362,7 @@
                             <input type="checkbox" id="wakeLockCheckbox" style="width: auto; height: 20px; accent-color: var(--accent-color);">
                         </label>
                     </div>
-                    <div class="settings-panel">
+                    <div class="settings-panel" id="panelEn">
                         <label style="color: var(--accent-color);">English Voice</label>
                         <div class="dual-grid">
                             <select id="voiceSelectEn"></select>
@@ -369,7 +375,7 @@
                         <textarea id="templateEn" style="margin-top:8px">It's {h} {m} and {s} seconds.</textarea>
                         <button id="testSpeakEn" class="test-button">Test Speak</button>
                     </div>
-                    <div class="settings-panel">
+                    <div class="settings-panel" id="panelJa">
                         <label style="color: var(--accent-color);">Japanese Voice</label>
                         <div class="dual-grid">
                             <select id="voiceSelectJa"></select>
@@ -417,6 +423,8 @@
         const wakeLockControl = document.getElementById('wakeLockControl');
         const testSpeakEnBtn = document.getElementById('testSpeakEn');
         const testSpeakJaBtn = document.getElementById('testSpeakJa');
+        const panelEn = document.getElementById('panelEn');
+        const panelJa = document.getElementById('panelJa');
 
 
         // --- Settings & State ---
@@ -557,28 +565,31 @@
             const masterVol = parseFloat(volInput.value);
 
             let utterance;
+            let targetPanel;
             if (lang === 'en') {
                 const volEn = parseFloat(volInputEn.value);
                 utterance = new SpeechSynthesisUtterance(processTemplate(templateEn.value));
                 utterance.voice = allVoices[voiceSelectEn.value];
                 utterance.rate = parseFloat(rateInputEn.value);
                 utterance.volume = masterVol * volEn;
+                targetPanel = panelEn;
             } else if (lang === 'ja') {
                 const volJa = parseFloat(volInputJa.value);
                 utterance = new SpeechSynthesisUtterance(processTemplate(templateJa.value));
                 utterance.voice = allVoices[voiceSelectJa.value];
                 utterance.rate = parseFloat(rateInputJa.value);
                 utterance.volume = masterVol * volJa;
+                targetPanel = panelJa;
             }
 
             if(utterance) {
                 utterance.onstart = () => {
-                    timerCard.classList.add('is-speaking');
+                    targetPanel.classList.add('is-testing');
                     statusBadge.textContent = "Testing...";
                     statusBadge.classList.add('speaking');
                 };
                 utterance.onend = () => {
-                    timerCard.classList.remove('is-speaking');
+                    targetPanel.classList.remove('is-testing');
                     statusBadge.textContent = "Active";
                     statusBadge.classList.remove('speaking');
                 };
@@ -598,6 +609,7 @@
 
             const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
             
+            // Only apply card-level animation for auto/ambient clicks
             timerCard.classList.add('is-speaking');
             statusBadge.textContent = "Speaking...";
             statusBadge.classList.add('speaking');
