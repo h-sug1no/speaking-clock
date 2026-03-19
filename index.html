@@ -17,6 +17,7 @@
             --clock-color: #ffffff;
             --input-bg: #2a2a2a;
             --input-text: #ffffff;
+            --error-color: #ff3b30;
         }
 
         /* サイバーマトリックス・テーマ */
@@ -50,22 +51,56 @@
         body, html {
             margin: 0;
             padding: 0;
-            height: 100%;
+            min-height: 100%;
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-            overflow: hidden;
             transition: background-color 0.5s ease;
+        }
+
+        #startupOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        #startupButton {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 122, 255, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #startupButton:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 122, 255, 0.5);
         }
 
         .app-container {
             display: flex;
-            height: 100vh;
-            width: 100vw;
+            min-height: 100vh;
+            width: 100%;
             background: radial-gradient(circle at 50% 50%, var(--grad-start) 0%, var(--grad-end) 100%);
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 40px 20px;
+            box-sizing: border-box;
             transition: background 0.5s ease;
             position: relative;
         }
@@ -87,7 +122,6 @@
             overflow: hidden;
         }
 
-        /* 設定非表示時の拡大レイアウト */
         .timer-card:has(#settingsBody.collapsed) {
             max-width: 620px;
             padding: 60px 40px;
@@ -160,7 +194,7 @@
         }
 
         .clock-display {
-            font-size: 88px;
+            font-size: clamp(48px, 15vw, 88px);
             font-weight: 500;
             text-align: center;
             margin: 0px 0 30px;
@@ -173,7 +207,7 @@
         }
 
         .timer-card:has(#settingsBody.collapsed) .clock-display {
-            font-size: 140px;
+            font-size: clamp(60px, 20vw, 140px);
             margin: 15px 0 15px;
             font-weight: 400;
             letter-spacing: -4px;
@@ -209,6 +243,12 @@
             border-radius: 16px;
             border: 1px solid rgba(255,255,255,0.05);
             margin-bottom: 10px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .settings-panel.is-testing {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 122, 255, 0.2);
         }
 
         label {
@@ -221,7 +261,7 @@
             display: block;
         }
 
-        select, textarea, input {
+        select, textarea, input, .test-button {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--input-text);
@@ -231,6 +271,12 @@
             font-size: 13px;
             outline: none;
             transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .test-button {
+            margin-top: 8px;
+            cursor: pointer;
         }
 
         .dual-grid {
@@ -252,7 +298,6 @@
             outline: none;
         }
 
-        /* 画面クリック時の波紋エフェクト */
         .ripple {
             position: absolute;
             background: var(--accent-color);
@@ -264,33 +309,45 @@
             z-index: 5;
         }
 
+        #wakeLockStatus {
+            font-size: 9px;
+            color: var(--error-color);
+            margin-top: 4px;
+            display: none;
+        }
+
         @keyframes ripple-effect {
             to { transform: scale(4); opacity: 0; }
+        }
+
+        @media (max-width: 480px) {
+            .timer-card { padding: 20px; }
+            .dual-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body id="rootBody">
 
+    <div id="startupOverlay">
+        <button id="startupButton">Start Clock</button>
+    </div>
+
     <div class="app-container" id="mainBg">
         <div class="timer-card" id="timerCard">
-            <!-- テスト再生トリガー -->
-            <button id="ambientTestTrigger" title="クリックしてテスト再生"></button>
-
+            <button id="ambientTestTrigger" title="Click to test playback"></button>
             <div class="card-header">
                 <div class="status-badge" id="statusBadge">Active</div>
                 <button class="settings-toggle" id="toggleSettings">
                     <span id="toggleText">Show Settings</span> ⚙️
                 </button>
             </div>
-            
             <div class="date-display" id="dateDisplay">----.--.-- (---)</div>
             <div class="clock-display" id="clock">00:00:00</div>
-
             <div id="settingsBody">
                 <div class="control-section">
                     <div class="dual-grid">
                         <div class="control-group">
-                            <label>テーマ</label>
+                            <label>Theme</label>
                             <select id="themeSelect">
                                 <option value="default">Midnight</option>
                                 <option value="theme-cyberpunk">Cyber Matrix</option>
@@ -298,27 +355,44 @@
                             </select>
                         </div>
                         <div class="control-group">
-                            <label>音量: <span id="volValue">80%</span></label>
-                            <input type="range" id="volInput" min="0" max="1" step="0.05" value="0.8">
+                            <label>Master Volume: <span id="volValue">80%</span></label>
+                            <input type="range" id="volInput" min="0" max="2" step="0.05" value="0.8">
                         </div>
                     </div>
+                    
+                    <div id="wakeLockGroup" class="control-group">
+                        <label for="wakeLockCheckbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; justify-content: space-between;">
+                            Keep Screen On
+                            <input type="checkbox" id="wakeLockCheckbox" style="width: auto; height: 20px; accent-color: var(--accent-color);">
+                        </label>
+                        <div id="wakeLockStatus">Permission denied by browser environment.</div>
+                    </div>
 
-                    <div class="settings-panel">
+                    <div class="settings-panel" id="panelEn">
                         <label style="color: var(--accent-color);">English Voice</label>
                         <div class="dual-grid">
                             <select id="voiceSelectEn"></select>
                             <input type="number" id="rateInputEn" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
+                        <div class="control-group" style="margin-top:8px">
+                            <label>Volume: <span id="volValueEn">100%</span></label>
+                            <input type="range" id="volInputEn" min="0" max="1.5" step="0.05" value="1.0">
+                        </div>
                         <textarea id="templateEn" style="margin-top:8px">It's {h} {m} and {s} seconds.</textarea>
+                        <button id="testSpeakEn" class="test-button">Test Speak</button>
                     </div>
-
-                    <div class="settings-panel">
-                        <label style="color: var(--accent-color);">日本語音声</label>
+                    <div class="settings-panel" id="panelJa">
+                        <label style="color: var(--accent-color);">Japanese Voice</label>
                         <div class="dual-grid">
                             <select id="voiceSelectJa"></select>
                             <input type="number" id="rateInputJa" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
+                        <div class="control-group" style="margin-top:8px">
+                            <label>Volume: <span id="volValueJa">100%</span></label>
+                            <input type="range" id="volInputJa" min="0" max="1.5" step="0.05" value="1.0">
+                        </div>
                         <textarea id="templateJa" style="margin-top:8px">{h}時{m}分{s}秒です</textarea>
+                        <button id="testSpeakJa" class="test-button">Test Speak</button>
                     </div>
                 </div>
             </div>
@@ -326,32 +400,89 @@
     </div>
 
     <script>
-        // 設定
+        // --- DOM Elements ---
+        const startupOverlay = document.getElementById('startupOverlay');
+        const startupButton = document.getElementById('startupButton');
+        const rootBody = document.getElementById('rootBody');
+        const timerCard = document.getElementById('timerCard');
+        const statusBadge = document.getElementById('statusBadge');
+        const toggleSettingsBtn = document.getElementById('toggleSettings');
+        const toggleText = document.getElementById('toggleText');
+        const dateDisplay = document.getElementById('dateDisplay');
+        const clockDisplay = document.getElementById('clock');
+        const settingsBody = document.getElementById('settingsBody');
+        const themeSelect = document.getElementById('themeSelect');
+        const volInput = document.getElementById('volInput');
+        const volValue = document.getElementById('volValue');
+        const volInputEn = document.getElementById('volInputEn');
+        const volValueEn = document.getElementById('volValueEn');
+        const volInputJa = document.getElementById('volInputJa');
+        const volValueJa = document.getElementById('volValueJa');
+        const voiceSelectEn = document.getElementById('voiceSelectEn');
+        const rateInputEn = document.getElementById('rateInputEn');
+        const templateEn = document.getElementById('templateEn');
+        const voiceSelectJa = document.getElementById('voiceSelectJa');
+        const rateInputJa = document.getElementById('rateInputJa');
+        const templateJa = document.getElementById('templateJa');
+        const ambientTestTrigger = document.getElementById('ambientTestTrigger');
+        const wakeLockCheckbox = document.getElementById('wakeLockCheckbox');
+        const wakeLockStatus = document.getElementById('wakeLockStatus');
+        const testSpeakEnBtn = document.getElementById('testSpeakEn');
+        const testSpeakJaBtn = document.getElementById('testSpeakJa');
+        const panelEn = document.getElementById('panelEn');
+        const panelJa = document.getElementById('panelJa');
+
+        // --- Settings & State ---
         const targetMinutes = [0, 7, 15, 22, 30, 37, 45, 52];
-        const targetSeconds = [0, 30]; 
+        const targetSeconds = [0, 30];
         const synth = window.speechSynthesis;
-        let allVoices = []; 
+        let allVoices = [];
         const STORAGE_KEY = 'speaking_clock_v1_final';
-
-        let lastAnnouncedTime = ""; 
+        let lastAnnouncedTime = "";
         const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        let wakeLock = null;
 
+        // --- Functions ---
+        const requestWakeLock = async () => {
+            if (!('wakeLock' in navigator)) return;
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLockStatus.style.display = 'none';
+            } catch (err) {
+                console.warn('Wake Lock failed (likely due to iframe/permissions policy).');
+                wakeLockStatus.style.display = 'block';
+                wakeLockCheckbox.checked = false;
+                saveSettings();
+            }
+        };
+
+        const releaseWakeLock = async () => {
+            if (wakeLock) {
+                try {
+                    await wakeLock.release();
+                } catch(e) {}
+                wakeLock = null;
+            }
+        };
+        
         function applyTheme(themeName) {
-            const body = document.getElementById('rootBody');
-            body.className = (themeName === 'default') ? '' : themeName;
+            rootBody.className = (themeName === 'default') ? '' : themeName;
         }
 
         function saveSettings() {
-            const isCollapsed = document.getElementById('settingsBody').classList.contains('collapsed');
+            const isCollapsed = settingsBody.classList.contains('collapsed');
             const data = {
-                theme: document.getElementById('themeSelect').value,
-                vol: document.getElementById('volInput').value,
-                vEn: document.getElementById('voiceSelectEn').value,
-                vJa: document.getElementById('voiceSelectJa').value,
-                tEn: document.getElementById('templateEn').value,
-                tJa: document.getElementById('templateJa').value,
-                rEn: document.getElementById('rateInputEn').value,
-                rJa: document.getElementById('rateInputJa').value,
+                theme: themeSelect.value,
+                vol: volInput.value,
+                volEn: volInputEn.value,
+                volJa: volInputJa.value,
+                vEn: voiceSelectEn.value,
+                vJa: voiceSelectJa.value,
+                tEn: templateEn.value,
+                tJa: templateJa.value,
+                rEn: rateInputEn.value,
+                rJa: rateInputJa.value,
+                wakeLock: wakeLockCheckbox.checked,
                 isCollapsed: isCollapsed
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -359,31 +490,41 @@
 
         function loadSettings() {
             const raw = localStorage.getItem(STORAGE_KEY);
-            const s = raw ? JSON.parse(raw) : {
-                theme: 'default', vol: 0.8,
+            const defaults = {
+                theme: 'default', vol: 0.8, volEn: 1.0, volJa: 1.0,
                 tEn: "It's {h} {m} and {s} seconds.",
                 tJa: "{h}時{m}分{s}秒です",
-                rEn: 1.0, rJa: 1.0, isCollapsed: true
+                rEn: 1.0, rJa: 1.0, isCollapsed: true,
+                wakeLock: false
             };
+            const loaded = raw ? JSON.parse(raw) : {};
+            const s = { ...defaults, ...loaded };
             
-            document.getElementById('themeSelect').value = s.theme;
-            document.getElementById('volInput').value = s.vol;
-            document.getElementById('templateEn').value = s.tEn;
-            document.getElementById('templateJa').value = s.tJa;
-            document.getElementById('rateInputEn').value = s.rEn;
-            document.getElementById('rateInputJa').value = s.rJa;
-            
-            applyTheme(s.theme);
-            document.getElementById('volValue').textContent = `${Math.round(s.vol * 100)}%`;
+            themeSelect.value = s.theme;
+            volInput.value = s.vol;
+            volInputEn.value = s.volEn;
+            volInputJa.value = s.volJa;
+            templateEn.value = s.tEn;
+            templateJa.value = s.tJa;
+            rateInputEn.value = s.rEn;
+            rateInputJa.value = s.rJa;
+            wakeLockCheckbox.checked = s.wakeLock;
 
-            const body = document.getElementById('settingsBody');
-            const btnText = document.getElementById('toggleText');
+            applyTheme(s.theme);
+            volValue.textContent = `${Math.round(s.vol * 100)}%`;
+            volValueEn.textContent = `${Math.round(s.volEn * 100)}%`;
+            volValueJa.textContent = `${Math.round(s.volJa * 100)}%`;
+
             if (s.isCollapsed) {
-                body.classList.add('collapsed');
-                btnText.textContent = "Show Settings";
+                settingsBody.classList.add('collapsed');
+                toggleText.textContent = "Show Settings";
             } else {
-                body.classList.remove('collapsed');
-                btnText.textContent = "Hide Settings";
+                settingsBody.classList.remove('collapsed');
+                toggleText.textContent = "Hide Settings";
+            }
+            
+            if (s.wakeLock) {
+                requestWakeLock();
             }
 
             window._tmpVEn = s.vEn;
@@ -393,32 +534,57 @@
         function setupVoices() {
             allVoices = synth.getVoices();
             if (allVoices.length === 0) return;
-            const enSel = document.getElementById('voiceSelectEn');
-            const jaSel = document.getElementById('voiceSelectJa');
-            
+
             const fEn = allVoices.map((v, i) => ({v, i})).filter(x => x.v.lang.includes('en-'));
             const fJa = allVoices.map((v, i) => ({v, i})).filter(x => x.v.lang.includes('ja-'));
             
-            enSel.innerHTML = fEn.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
-            jaSel.innerHTML = fJa.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
+            voiceSelectEn.innerHTML = fEn.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
+            voiceSelectJa.innerHTML = fJa.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
             
-            if (window._tmpVEn !== undefined) enSel.value = window._tmpVEn;
-            if (window._tmpVJa !== undefined) jaSel.value = window._tmpVJa;
+            if (window._tmpVEn !== undefined) voiceSelectEn.value = window._tmpVEn;
+            if (window._tmpVJa !== undefined) voiceSelectJa.value = window._tmpVJa;
         }
 
-        function createRipple(e) {
-            const container = document.getElementById('timerCard');
-            const ripple = document.createElement('span');
-            ripple.classList.add('ripple');
-            const rect = container.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height);
-            ripple.style.width = ripple.style.height = `${size}px`;
-            const x = e.clientX - rect.left - size / 2;
-            const y = e.clientY - rect.top - size / 2;
-            ripple.style.left = `${x}px`;
-            ripple.style.top = `${y}px`;
-            container.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 600);
+        function testSpeak(lang) {
+            synth.cancel();
+
+            const now = new Date();
+            const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+            const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
+            
+            const masterVol = parseFloat(volInput.value);
+
+            let utterance;
+            let targetPanel;
+            if (lang === 'en') {
+                const volEn = parseFloat(volInputEn.value);
+                utterance = new SpeechSynthesisUtterance(processTemplate(templateEn.value));
+                utterance.voice = allVoices[voiceSelectEn.value];
+                utterance.rate = parseFloat(rateInputEn.value);
+                utterance.volume = masterVol * volEn;
+                targetPanel = panelEn;
+            } else if (lang === 'ja') {
+                const volJa = parseFloat(volInputJa.value);
+                utterance = new SpeechSynthesisUtterance(processTemplate(templateJa.value));
+                utterance.voice = allVoices[voiceSelectJa.value];
+                utterance.rate = parseFloat(rateInputJa.value);
+                utterance.volume = masterVol * volJa;
+                targetPanel = panelJa;
+            }
+
+            if(utterance) {
+                utterance.onstart = () => {
+                    targetPanel.classList.add('is-testing');
+                    statusBadge.textContent = "Testing...";
+                    statusBadge.classList.add('speaking');
+                };
+                utterance.onend = () => {
+                    targetPanel.classList.remove('is-testing');
+                    statusBadge.textContent = "Active";
+                    statusBadge.classList.remove('speaking');
+                };
+                synth.speak(utterance);
+            }
         }
 
         function announce(h, m, s, isManual = false) {
@@ -427,76 +593,105 @@
             lastAnnouncedTime = currentTimeKey;
 
             synth.cancel();
-            const vol = parseFloat(document.getElementById('volInput').value);
+            const masterVol = parseFloat(volInput.value);
+            const volEn = parseFloat(volInputEn.value);
+            const volJa = parseFloat(volInputJa.value);
+
             const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
             
-            const card = document.getElementById('timerCard');
-            const badge = document.getElementById('statusBadge');
-            card.classList.add('is-speaking');
-            badge.textContent = "Speaking...";
-            badge.classList.add('speaking');
+            timerCard.classList.add('is-speaking');
+            statusBadge.textContent = "Speaking...";
+            statusBadge.classList.add('speaking');
 
-            const uEn = new SpeechSynthesisUtterance(processTemplate(document.getElementById('templateEn').value));
-            uEn.voice = allVoices[document.getElementById('voiceSelectEn').value];
-            uEn.rate = parseFloat(document.getElementById('rateInputEn').value);
-            uEn.volume = vol;
+            const uEn = new SpeechSynthesisUtterance(processTemplate(templateEn.value));
+            uEn.voice = allVoices[voiceSelectEn.value];
+            uEn.rate = parseFloat(rateInputEn.value);
+            uEn.volume = masterVol * volEn;
 
-            const uJa = new SpeechSynthesisUtterance(processTemplate(document.getElementById('templateJa').value));
-            uJa.voice = allVoices[document.getElementById('voiceSelectJa').value];
-            uJa.rate = parseFloat(document.getElementById('rateInputJa').value);
-            uJa.volume = vol;
+            const uJa = new SpeechSynthesisUtterance(processTemplate(templateJa.value));
+            uJa.voice = allVoices[voiceSelectJa.value];
+            uJa.rate = parseFloat(rateInputJa.value);
+            uJa.volume = masterVol * volJa;
 
             uJa.onend = () => {
-                card.classList.remove('is-speaking');
-                badge.textContent = "Active";
-                badge.classList.remove('speaking');
+                timerCard.classList.remove('is-speaking');
+                statusBadge.textContent = "Active";
+                statusBadge.classList.remove('speaking');
             };
             uEn.onend = () => { setTimeout(() => synth.speak(uJa), 300); };
             synth.speak(uEn);
         }
 
-        document.getElementById('themeSelect').onchange = (e) => {
-            applyTheme(e.target.value);
-            saveSettings();
-        };
-
-        document.getElementById('toggleSettings').onclick = (e) => {
-            e.stopPropagation();
-            const body = document.getElementById('settingsBody');
-            const btnText = document.getElementById('toggleText');
-            body.classList.toggle('collapsed');
-            btnText.textContent = body.classList.contains('collapsed') ? "Show Settings" : "Hide Settings";
-            saveSettings();
-        };
-
         function tick() {
             const now = new Date();
             const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-            document.getElementById('dateDisplay').textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
-            document.getElementById('clock').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            dateDisplay.textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
+            clockDisplay.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
             if (targetMinutes.includes(m) && targetSeconds.includes(s)) announce(h, m, s);
             requestAnimationFrame(tick);
         }
 
-        window.speechSynthesis.onvoiceschanged = setupVoices;
-        const runTest = (e) => {
-            if (e && e.clientX) createRipple(e);
-            const d = new Date();
-            announce(d.getHours(), d.getMinutes(), d.getSeconds(), true);
-        };
-        document.getElementById('ambientTestTrigger').onclick = runTest;
-        document.getElementById('volInput').oninput = (e) => {
-            document.getElementById('volValue').textContent = `${Math.round(e.target.value * 100)}%`;
-            saveSettings();
-        };
-        document.querySelectorAll('input, select, textarea').forEach(el => {
-            if (el.id !== 'themeSelect') el.addEventListener('input', saveSettings);
-            el.addEventListener('click', (e) => e.stopPropagation());
-        });
+        function main() {
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && wakeLockCheckbox.checked) {
+                    requestWakeLock();
+                }
+            });
 
-        loadSettings();
-        setupVoices();
-        requestAnimationFrame(tick);
+            wakeLockCheckbox.onchange = () => {
+                if (wakeLockCheckbox.checked) {
+                    requestWakeLock();
+                } else {
+                    releaseWakeLock();
+                }
+                saveSettings();
+            };
+            
+            testSpeakEnBtn.onclick = (e) => { e.stopPropagation(); testSpeak('en'); };
+            testSpeakJaBtn.onclick = (e) => { e.stopPropagation(); testSpeak('ja'); };
+            ambientTestTrigger.onclick = (e) => {
+                const rect = timerCard.getBoundingClientRect();
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                const size = Math.max(rect.width, rect.height);
+                ripple.style.width = ripple.style.height = `${size}px`;
+                ripple.style.left = `${e.clientX - rect.left - size/2}px`;
+                ripple.style.top = `${e.clientY - rect.top - size/2}px`;
+                timerCard.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+                const d = new Date();
+                announce(d.getHours(), d.getMinutes(), d.getSeconds(), true);
+            };
+            
+            volInput.oninput = (e) => volValue.textContent = `${Math.round(e.target.value * 100)}%`;
+            volInputEn.oninput = (e) => volValueEn.textContent = `${Math.round(e.target.value * 100)}%`;
+            volInputJa.oninput = (e) => volValueJa.textContent = `${Math.round(e.target.value * 100)}%`;
+
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                el.addEventListener('change', saveSettings);
+                el.addEventListener('click', (e) => e.stopPropagation());
+            });
+            
+            toggleSettingsBtn.onclick = (e) => {
+                e.stopPropagation();
+                settingsBody.classList.toggle('collapsed');
+                toggleText.textContent = settingsBody.classList.contains('collapsed') ? "Show Settings" : "Hide Settings";
+                saveSettings();
+            };
+
+            loadSettings();
+            setupVoices();
+            if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = setupVoices;
+            requestAnimationFrame(tick);
+        }
+
+        startupButton.onclick = () => {
+            synth.cancel();
+            synth.speak(new SpeechSynthesisUtterance(' '));
+            startupOverlay.style.opacity = '0';
+            setTimeout(() => startupOverlay.style.display = 'none', 500);
+            main();
+        };
     </script>
 </body>
 </html>
