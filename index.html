@@ -418,7 +418,6 @@
             try {
                 wakeLock = await navigator.wakeLock.request('screen');
                 wakeLock.addEventListener('release', () => {
-                    wakeLockCheckbox.checked = false;
                     wakeLock = null;
                 });
             } catch (err) {
