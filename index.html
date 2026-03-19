@@ -334,6 +334,12 @@
                             <input type="range" id="volInput" min="0" max="2" step="0.05" value="0.8">
                         </div>
                     </div>
+                     <div id="wakeLockControl" class="control-group">
+                        <label for="wakeLockCheckbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; justify-content: space-between;">
+                            Keep Screen On
+                            <input type="checkbox" id="wakeLockCheckbox" style="width: auto; height: 20px; accent-color: var(--accent-color);">
+                        </label>
+                    </div>
                     <div class="settings-panel">
                         <label style="color: var(--accent-color);">English Voice</label>
                         <div class="dual-grid">
@@ -389,6 +395,9 @@
         const rateInputJa = document.getElementById('rateInputJa');
         const templateJa = document.getElementById('templateJa');
         const ambientTestTrigger = document.getElementById('ambientTestTrigger');
+        const wakeLockCheckbox = document.getElementById('wakeLockCheckbox');
+        const wakeLockControl = document.getElementById('wakeLockControl');
+
 
         // --- Settings & State ---
         const targetMinutes = [0, 7, 15, 22, 30, 37, 45, 52];
@@ -398,8 +407,33 @@
         const STORAGE_KEY = 'speaking_clock_v1_final';
         let lastAnnouncedTime = "";
         const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+        let wakeLock = null;
 
         // --- Functions ---
+        const requestWakeLock = async () => {
+            if (!('wakeLock' in navigator)) {
+                console.warn('Wake Lock API not supported.');
+                return;
+            }
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => {
+                    wakeLockCheckbox.checked = false;
+                    wakeLock = null;
+                });
+            } catch (err) {
+                console.error(`Wake Lock failed: ${err.name}, ${err.message}`);
+                wakeLockCheckbox.checked = false;
+            }
+        };
+
+        const releaseWakeLock = async () => {
+            if (wakeLock) {
+                await wakeLock.release();
+                wakeLock = null;
+            }
+        };
+        
         function applyTheme(themeName) {
             rootBody.className = (themeName === 'default') ? '' : themeName;
         }
@@ -417,6 +451,7 @@
                 tJa: templateJa.value,
                 rEn: rateInputEn.value,
                 rJa: rateInputJa.value,
+                wakeLock: wakeLockCheckbox.checked,
                 isCollapsed: isCollapsed
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -428,7 +463,8 @@
                 theme: 'default', vol: 0.8, volEn: 1.0, volJa: 1.0,
                 tEn: "It's {h} {m} and {s} seconds.",
                 tJa: "{h}時{m}分{s}秒です",
-                rEn: 1.0, rJa: 1.0, isCollapsed: true
+                rEn: 1.0, rJa: 1.0, isCollapsed: true,
+                wakeLock: false
             };
             const loaded = raw ? JSON.parse(raw) : {};
             const s = { ...defaults, ...loaded };
@@ -441,7 +477,8 @@
             templateJa.value = s.tJa;
             rateInputEn.value = s.rEn;
             rateInputJa.value = s.rJa;
-            
+            wakeLockCheckbox.checked = s.wakeLock;
+
             applyTheme(s.theme);
             volValue.textContent = `${Math.round(s.vol * 100)}%`;
             volValueEn.textContent = `${Math.round(s.volEn * 100)}%`;
@@ -453,6 +490,10 @@
             } else {
                 settingsBody.classList.remove('collapsed');
                 toggleText.textContent = "Hide Settings";
+            }
+            
+            if (s.wakeLock) {
+                requestWakeLock();
             }
 
             window._tmpVEn = s.vEn;
@@ -538,19 +579,25 @@
         }
 
         function main() {
-            // Event Listeners
-            themeSelect.onchange = (e) => {
-                applyTheme(e.target.value);
-                saveSettings();
-            };
+            if (!('wakeLock' in navigator)) {
+                wakeLockControl.style.display = 'none';
+            }
 
-            toggleSettingsBtn.onclick = (e) => {
-                e.stopPropagation();
-                settingsBody.classList.toggle('collapsed');
-                toggleText.textContent = settingsBody.classList.contains('collapsed') ? "Show Settings" : "Hide Settings";
-                saveSettings();
+            const handleVisibilityChange = () => {
+                if (document.visibilityState === 'visible' && wakeLockCheckbox.checked) {
+                    requestWakeLock();
+                }
             };
+            document.addEventListener('visibilitychange', handleVisibilityChange);
 
+            wakeLockCheckbox.onchange = () => {
+                if (wakeLockCheckbox.checked) {
+                    requestWakeLock();
+                } else {
+                    releaseWakeLock();
+                }
+            };
+            
             ambientTestTrigger.onclick = runTest;
             
             volInput.oninput = (e) => {
@@ -564,9 +611,16 @@
             };
 
             document.querySelectorAll('input, select, textarea').forEach(el => {
-                el.addEventListener('change', saveSettings); // 'change' is better for performance on range sliders
+                el.addEventListener('change', saveSettings);
                 el.addEventListener('click', (e) => e.stopPropagation());
             });
+            
+            toggleSettingsBtn.onclick = (e) => {
+                e.stopPropagation();
+                settingsBody.classList.toggle('collapsed');
+                toggleText.textContent = settingsBody.classList.contains('collapsed') ? "Show Settings" : "Hide Settings";
+                saveSettings();
+            };
 
             // Initial Load
             loadSettings();
