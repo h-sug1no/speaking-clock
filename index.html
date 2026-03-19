@@ -330,7 +330,7 @@
                             </select>
                         </div>
                         <div class="control-group">
-                            <label>Volume: <span id="volValue">80%</span></label>
+                            <label>Master Volume: <span id="volValue">80%</span></label>
                             <input type="range" id="volInput" min="0" max="2" step="0.05" value="0.8">
                         </div>
                     </div>
@@ -340,6 +340,10 @@
                             <select id="voiceSelectEn"></select>
                             <input type="number" id="rateInputEn" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
+                        <div class="control-group" style="margin-top:8px">
+                            <label>Volume: <span id="volValueEn">100%</span></label>
+                            <input type="range" id="volInputEn" min="0" max="1.5" step="0.05" value="1.0">
+                        </div>
                         <textarea id="templateEn" style="margin-top:8px">It's {h} {m} and {s} seconds.</textarea>
                     </div>
                     <div class="settings-panel">
@@ -347,6 +351,10 @@
                         <div class="dual-grid">
                             <select id="voiceSelectJa"></select>
                             <input type="number" id="rateInputJa" min="0.5" max="2.0" step="0.1" value="1.0">
+                        </div>
+                        <div class="control-group" style="margin-top:8px">
+                            <label>Volume: <span id="volValueJa">100%</span></label>
+                            <input type="range" id="volInputJa" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
                         <textarea id="templateJa" style="margin-top:8px">{h}時{m}分{s}秒です</textarea>
                     </div>
@@ -370,6 +378,10 @@
         const themeSelect = document.getElementById('themeSelect');
         const volInput = document.getElementById('volInput');
         const volValue = document.getElementById('volValue');
+        const volInputEn = document.getElementById('volInputEn');
+        const volValueEn = document.getElementById('volValueEn');
+        const volInputJa = document.getElementById('volInputJa');
+        const volValueJa = document.getElementById('volValueJa');
         const voiceSelectEn = document.getElementById('voiceSelectEn');
         const rateInputEn = document.getElementById('rateInputEn');
         const templateEn = document.getElementById('templateEn');
@@ -397,6 +409,8 @@
             const data = {
                 theme: themeSelect.value,
                 vol: volInput.value,
+                volEn: volInputEn.value,
+                volJa: volInputJa.value,
                 vEn: voiceSelectEn.value,
                 vJa: voiceSelectJa.value,
                 tEn: templateEn.value,
@@ -410,15 +424,19 @@
 
         function loadSettings() {
             const raw = localStorage.getItem(STORAGE_KEY);
-            const s = raw ? JSON.parse(raw) : {
-                theme: 'default', vol: 0.8,
+            const defaults = {
+                theme: 'default', vol: 0.8, volEn: 1.0, volJa: 1.0,
                 tEn: "It's {h} {m} and {s} seconds.",
                 tJa: "{h}時{m}分{s}秒です",
                 rEn: 1.0, rJa: 1.0, isCollapsed: true
             };
+            const loaded = raw ? JSON.parse(raw) : {};
+            const s = { ...defaults, ...loaded };
             
             themeSelect.value = s.theme;
             volInput.value = s.vol;
+            volInputEn.value = s.volEn;
+            volInputJa.value = s.volJa;
             templateEn.value = s.tEn;
             templateJa.value = s.tJa;
             rateInputEn.value = s.rEn;
@@ -426,6 +444,8 @@
             
             applyTheme(s.theme);
             volValue.textContent = `${Math.round(s.vol * 100)}%`;
+            volValueEn.textContent = `${Math.round(s.volEn * 100)}%`;
+            volValueJa.textContent = `${Math.round(s.volJa * 100)}%`;
 
             if (s.isCollapsed) {
                 settingsBody.classList.add('collapsed');
@@ -473,7 +493,10 @@
             lastAnnouncedTime = currentTimeKey;
 
             synth.cancel();
-            const vol = parseFloat(volInput.value);
+            const masterVol = parseFloat(volInput.value);
+            const volEn = parseFloat(volInputEn.value);
+            const volJa = parseFloat(volInputJa.value);
+
             const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
             
             timerCard.classList.add('is-speaking');
@@ -483,12 +506,12 @@
             const uEn = new SpeechSynthesisUtterance(processTemplate(templateEn.value));
             uEn.voice = allVoices[voiceSelectEn.value];
             uEn.rate = parseFloat(rateInputEn.value);
-            uEn.volume = vol;
+            uEn.volume = masterVol * volEn;
 
             const uJa = new SpeechSynthesisUtterance(processTemplate(templateJa.value));
             uJa.voice = allVoices[voiceSelectJa.value];
             uJa.rate = parseFloat(rateInputJa.value);
-            uJa.volume = vol;
+            uJa.volume = masterVol * volJa;
 
             uJa.onend = () => {
                 timerCard.classList.remove('is-speaking');
@@ -529,13 +552,19 @@
             };
 
             ambientTestTrigger.onclick = runTest;
+            
             volInput.oninput = (e) => {
                 volValue.textContent = `${Math.round(e.target.value * 100)}%`;
-                saveSettings();
+            };
+            volInputEn.oninput = (e) => {
+                volValueEn.textContent = `${Math.round(e.target.value * 100)}%`;
+            };
+            volInputJa.oninput = (e) => {
+                volValueJa.textContent = `${Math.round(e.target.value * 100)}%`;
             };
 
             document.querySelectorAll('input, select, textarea').forEach(el => {
-                if (el.id !== 'themeSelect') el.addEventListener('input', saveSettings);
+                el.addEventListener('change', saveSettings); // 'change' is better for performance on range sliders
                 el.addEventListener('click', (e) => e.stopPropagation());
             });
 
