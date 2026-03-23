@@ -378,7 +378,7 @@
                             <label>Volume: <span id="volValueEn">100%</span></label>
                             <input type="range" id="volInputEn" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
-                        <textarea id="templateEn" style="margin-top:8px">It's {h} {m} and {s} seconds.</textarea>
+                        <textarea id="templateEn" style="margin-top:8px" placeholder="Enter English template..."></textarea>
                         <button id="testSpeakEn" class="test-button">Test Speak</button>
                     </div>
                     <div class="settings-panel" id="panelJa">
@@ -391,7 +391,7 @@
                             <label>Volume: <span id="volValueJa">100%</span></label>
                             <input type="range" id="volInputJa" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
-                        <textarea id="templateJa" style="margin-top:8px">{h}時{m}分{s}秒です</textarea>
+                        <textarea id="templateJa" style="margin-top:8px" placeholder="Enter Japanese template..."></textarea>
                         <button id="testSpeakJa" class="test-button">Test Speak</button>
                     </div>
                 </div>
@@ -699,6 +699,7 @@
                 // themeSelectは別途onchangeで処理しているので除外しても良いが、一括保存のため残す
                 el.addEventListener('change', saveSettings);
                 el.addEventListener('click', (e) => e.stopPropagation());
+                el.title = "{h} = hours, {m} = minutes, {s} = seconds, {lts} = locale time string";
             });
             
             toggleSettingsBtn.onclick = (e) => {
