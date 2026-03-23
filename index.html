@@ -493,8 +493,8 @@
             const raw = localStorage.getItem(STORAGE_KEY);
             const defaults = {
                 theme: 'default', vol: 0.8, volEn: 1.0, volJa: 1.0,
-                tEn: "It's {h} {m} and {s} seconds.",
-                tJa: "{h}時{m}分{s}秒です",
+                tEn: "It's {lts}.",
+                tJa: "{lts}です",
                 rEn: 1.0, rJa: 1.0, isCollapsed: true,
                 wakeLock: false
             };
@@ -548,27 +548,41 @@
             if (window._tmpVJa !== undefined) voiceSelectJa.value = window._tmpVJa;
         }
 
+        function processTemplate(tpl, lang, {h, m, s, now} = {}) {
+            return tpl.replace(/{h}/g, h)
+                .replace(/{m}/g, m)
+                .replace(/{s}/g, s)
+                .replace(/{lts}/g, now.toLocaleTimeString(lang === 'en' ? 'en-US' : 'ja-JP', {
+                    /*
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                    */
+                }))
+            ;
+        }
+
         function testSpeak(lang) {
             synth.cancel();
 
             const now = new Date();
             const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-            const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
             
             const masterVol = parseFloat(volInput.value);
 
             let utterance;
             let targetPanel;
+            const tmpArgs = {h, m, s, now};
             if (lang === 'en') {
                 const volEn = parseFloat(volInputEn.value);
-                utterance = new SpeechSynthesisUtterance(processTemplate(templateEn.value));
+                utterance = new SpeechSynthesisUtterance(processTemplate(templateEn.value, lang, tmpArgs));
                 utterance.voice = allVoices[voiceSelectEn.value];
                 utterance.rate = parseFloat(rateInputEn.value);
                 utterance.volume = masterVol * volEn;
                 targetPanel = panelEn;
             } else if (lang === 'ja') {
                 const volJa = parseFloat(volInputJa.value);
-                utterance = new SpeechSynthesisUtterance(processTemplate(templateJa.value));
+                utterance = new SpeechSynthesisUtterance(processTemplate(templateJa.value, lang, tmpArgs));
                 utterance.voice = allVoices[voiceSelectJa.value];
                 utterance.rate = parseFloat(rateInputJa.value);
                 utterance.volume = masterVol * volJa;
@@ -602,18 +616,17 @@
             const volEn = parseFloat(volInputEn.value);
             const volJa = parseFloat(volInputJa.value);
 
-            const processTemplate = (tpl) => tpl.replace(/{h}/g, h).replace(/{m}/g, m).replace(/{s}/g, s);
-            
             timerCard.classList.add('is-speaking');
             statusBadge.textContent = "Speaking...";
             statusBadge.classList.add('speaking');
 
-            const uEn = new SpeechSynthesisUtterance(processTemplate(templateEn.value));
+            const tmpArgs = {h, m, s, now: new Date()};
+            const uEn = new SpeechSynthesisUtterance(processTemplate(templateEn.value, 'en', tmpArgs));
             uEn.voice = allVoices[voiceSelectEn.value];
             uEn.rate = parseFloat(rateInputEn.value);
             uEn.volume = masterVol * volEn;
 
-            const uJa = new SpeechSynthesisUtterance(processTemplate(templateJa.value));
+            const uJa = new SpeechSynthesisUtterance(processTemplate(templateJa.value, 'ja', tmpArgs));
             uJa.voice = allVoices[voiceSelectJa.value];
             uJa.rate = parseFloat(rateInputJa.value);
             uJa.volume = masterVol * volJa;
