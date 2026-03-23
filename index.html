@@ -581,11 +581,13 @@
                     statusBadge.textContent = "Testing...";
                     statusBadge.classList.add('speaking');
                 };
-                utterance.onend = () => {
+                const onEnd = () => {
                     targetPanel.classList.remove('is-testing');
                     statusBadge.textContent = "Active";
                     statusBadge.classList.remove('speaking');
                 };
+                utterance.onend = onEnd;
+                utterance.onerror = onEnd;
                 synth.speak(utterance);
             }
         }
@@ -616,11 +618,15 @@
             uJa.rate = parseFloat(rateInputJa.value);
             uJa.volume = masterVol * volJa;
 
-            uJa.onend = () => {
+            const onEnd = () => {
                 timerCard.classList.remove('is-speaking');
                 statusBadge.textContent = "Active";
                 statusBadge.classList.remove('speaking');
             };
+            uJa.onend = onEnd;
+            uJa.onerror = onEnd;
+            uEn.onerror = onEnd;
+
             uEn.onend = () => { setTimeout(() => synth.speak(uJa), 300); };
             synth.speak(uEn);
         }
