@@ -274,6 +274,11 @@
             box-sizing: border-box;
         }
 
+        select:invalid {
+            opacity: 0.6;
+            font-style: italic;
+        }
+
         .test-button {
             margin-top: 8px;
             cursor: pointer;
@@ -371,7 +376,7 @@
                     <div class="settings-panel" id="panelEn">
                         <label style="color: var(--accent-color);">English Voice</label>
                         <div class="dual-grid">
-                            <select id="voiceSelectEn"></select>
+                            <select id="voiceSelectEn" required></select>
                             <input type="number" id="rateInputEn" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
@@ -384,7 +389,7 @@
                     <div class="settings-panel" id="panelJa">
                         <label style="color: var(--accent-color);">Japanese Voice</label>
                         <div class="dual-grid">
-                            <select id="voiceSelectJa"></select>
+                            <select id="voiceSelectJa" required></select>
                             <input type="number" id="rateInputJa" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
@@ -436,7 +441,7 @@
         const targetMinutes = [0, 7, 15, 22, 30, 37, 45, 52];
         const targetSeconds = [0, 30];
         const synth = window.speechSynthesis;
-        let allVoices = [];
+        let voiceMapByVoiceURI = {};
         const STORAGE_KEY = 'speaking_clock_v1_final';
         let lastAnnouncedTime = "";
         const weekdays = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -534,18 +539,36 @@
             window._tmpVJa = s.vJa;
         }
 
+        let synthVoices;
         function setupVoices() {
-            allVoices = synth.getVoices();
-            if (allVoices.length === 0) return;
 
-            const fEn = allVoices.map((v, i) => ({v, i})).filter(x => x.v.lang.includes('en-'));
-            const fJa = allVoices.map((v, i) => ({v, i})).filter(x => x.v.lang.includes('ja-'));
+            const tAllVoices = synth.getVoices();
+            if (tAllVoices.length === 0) return;
+            if (synthVoices && JSON.stringify(synthVoices) === JSON.stringify(tAllVoices)) return; // 変更がない場合は再処理しない
+            synthVoices = tAllVoices;
+
+            const fEn = {};
+            const fJa = {};
+
+            tAllVoices.forEach((v) => {
+                voiceMapByVoiceURI[v.voiceURI] = v;
+                if (v.lang.includes('en-')) fEn[v.voiceURI] = v;
+                if (v.lang.includes('ja-')) fJa[v.voiceURI] = v;
+            });
+            const placeholderOption = '<option value="" disabled class="placeholder">Select Voice</option>';
+            voiceSelectEn.innerHTML = placeholderOption +
+                Object.values(fEn).map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
+            voiceSelectJa.innerHTML = placeholderOption +
+                Object.values(fJa).map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
             
-            voiceSelectEn.innerHTML = fEn.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
-            voiceSelectJa.innerHTML = fJa.map(x => `<option value="${x.i}">${x.v.name}</option>`).join('');
-            
-            if (window._tmpVEn !== undefined) voiceSelectEn.value = window._tmpVEn;
-            if (window._tmpVJa !== undefined) voiceSelectJa.value = window._tmpVJa;
+            if (window._tmpVEn !== undefined) {
+                voiceSelectEn.value = window._tmpVEn;
+                if (voiceSelectEn.value !== window._tmpVEn) voiceSelectEn.value = ""; // もし保存されている値が現在の環境で見つからない場合は選択をクリア
+            }
+            if (window._tmpVJa !== undefined) {
+                voiceSelectJa.value = window._tmpVJa;
+                if (voiceSelectJa.value !== window._tmpVJa) voiceSelectJa.value = ""; // もし保存されている値が現在の環境で見つからない場合は選択をクリア
+            }
         }
 
         function processTemplate(tpl, lang, {h, m, s, now} = {}) {
@@ -576,14 +599,14 @@
             if (lang === 'en') {
                 const volEn = parseFloat(volInputEn.value);
                 utterance = new SpeechSynthesisUtterance(processTemplate(templateEn.value, lang, tmpArgs));
-                utterance.voice = allVoices[voiceSelectEn.value];
+                utterance.voice = voiceMapByVoiceURI[voiceSelectEn.value];
                 utterance.rate = parseFloat(rateInputEn.value);
                 utterance.volume = masterVol * volEn;
                 targetPanel = panelEn;
             } else if (lang === 'ja') {
                 const volJa = parseFloat(volInputJa.value);
                 utterance = new SpeechSynthesisUtterance(processTemplate(templateJa.value, lang, tmpArgs));
-                utterance.voice = allVoices[voiceSelectJa.value];
+                utterance.voice = voiceMapByVoiceURI[voiceSelectJa.value];
                 utterance.rate = parseFloat(rateInputJa.value);
                 utterance.volume = masterVol * volJa;
                 targetPanel = panelJa;
@@ -622,12 +645,12 @@
 
             const tmpArgs = {h, m, s, now: new Date()};
             const uEn = new SpeechSynthesisUtterance(processTemplate(templateEn.value, 'en', tmpArgs));
-            uEn.voice = allVoices[voiceSelectEn.value];
+            uEn.voice = voiceMapByVoiceURI[voiceSelectEn.value];
             uEn.rate = parseFloat(rateInputEn.value);
             uEn.volume = masterVol * volEn;
 
             const uJa = new SpeechSynthesisUtterance(processTemplate(templateJa.value, 'ja', tmpArgs));
-            uJa.voice = allVoices[voiceSelectJa.value];
+            uJa.voice = voiceMapByVoiceURI[voiceSelectJa.value];
             uJa.rate = parseFloat(rateInputJa.value);
             uJa.volume = masterVol * volJa;
 
