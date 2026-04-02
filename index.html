@@ -275,6 +275,10 @@
             display: block;
             margin-bottom: 3px;
         }
+        .control-group input[type="range"] {
+            height: 1rem;
+            margin-top: -0.1rem;
+        }
 
         select, textarea, input, .test-button {
             background: var(--input-bg);
@@ -317,6 +321,7 @@
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-bottom: 16px;
+            align-items: center;
         }
 
         #ambientTestTrigger {
@@ -409,7 +414,6 @@
                                 <select class="langSelect" data-panel="0"></select>
                             </div>
                         </div>
-                        <label style="color: var(--accent-color);">Voice Settings</label>
                         <div class="control-group">
                             <label for="voiceSelect0">Voice</label>
                             <select id="voiceSelect0"></select>
