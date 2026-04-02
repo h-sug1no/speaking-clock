@@ -277,11 +277,6 @@
             box-sizing: border-box;
         }
 
-        select:invalid {
-            opacity: 0.6;
-            font-style: italic;
-        }
-
         .test-button {
             margin-top: 8px;
             cursor: pointer;
@@ -686,7 +681,7 @@
                 elems.voiceSelect.value = voices[0].voiceURI;
             }
 
-            // まだ空なら強制リセット（placeholder を残す）
+            // まだ空ならプレースホルダ維持（voicesなし）
             if (!elems.voiceSelect.value) {
                 elems.voiceSelect.value = "";
             }
