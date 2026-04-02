@@ -847,7 +847,9 @@
                 // themeSelectは別途onchangeで処理しているので除外しても良いが、一括保存のため残す
                 el.addEventListener('change', saveSettings);
                 el.addEventListener('click', (e) => e.stopPropagation());
-                el.title = "{h} = hours, {m} = minutes, {s} = seconds, {lts} = locale time string";
+                if (el.tagName.toLocaleLowerCase()==='textarea') {
+                    el.title = "{h} = hours, {m} = minutes, {s} = seconds, {lts} = locale time string";
+                }
             });
             
             toggleSettingsBtn.onclick = (e) => {
