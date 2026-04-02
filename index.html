@@ -379,9 +379,13 @@
                             </div>
                         </div>
                         <label style="color: var(--accent-color);">Voice Settings</label>
-                        <div class="dual-grid">
-                            <select id="voiceSelect0" required></select>
-                            <input type="number" id="rateInput0" min="0.5" max="2.0" step="0.1" value="1.0">
+                        <div class="control-group">
+                            <label for="voiceSelect0">Voice</label>
+                            <select id="voiceSelect0"></select>
+                        </div>
+                        <div class="control-group" style="margin-top:8px">
+                            <label for="rateInput0">Rate: <span id="rateValue0">1.0</span></label>
+                            <input type="range" id="rateInput0" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
                             <label>Volume: <span id="volValue0">100%</span></label>
@@ -398,9 +402,13 @@
                             </div>
                         </div>
                         <label style="color: var(--accent-color);">Voice Settings</label>
-                        <div class="dual-grid">
-                            <select id="voiceSelect1" required></select>
-                            <input type="number" id="rateInput1" min="0.5" max="2.0" step="0.1" value="1.0">
+                        <div class="control-group">
+                            <label for="voiceSelect1">Voice</label>
+                            <select id="voiceSelect1"></select>
+                        </div>
+                        <div class="control-group" style="margin-top:8px">
+                            <label for="rateInput1">Rate: <span id="rateValue1">1.0</span></label>
+                            <input type="range" id="rateInput1" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
                             <label>Volume: <span id="volValue1">100%</span></label>
@@ -469,6 +477,7 @@
                 panel: document.getElementById(profile.panelId),
                 voiceSelect: document.getElementById(profile.voiceSelectId),
                 rateInput: document.getElementById(profile.rateInputId),
+                rateValue: document.getElementById(`rateValue${index}`),
                 volInput: document.getElementById(profile.volInputId),
                 volValue: document.getElementById(profile.volValueId),
                 template: document.getElementById(profile.templateId),
@@ -577,6 +586,7 @@
                 elems.volInput.value = s[volKey];
                 elems.template.value = s[tKey];
                 elems.rateInput.value = s[rKey];
+                elems.rateValue.textContent = `${parseFloat(s[rKey]).toFixed(1)}`;
                 elems.volValue.textContent = `${Math.round(s[volKey] * 100)}%`;
                 window[`_tmpV_${index}_${langKey}`] = s[vKey];
             });
@@ -821,6 +831,7 @@
                 const elems = languageElements[index];
                 elems.testBtn.onclick = (e) => { e.stopPropagation(); testSpeak(index); };
                 elems.volInput.oninput = (e) => elems.volValue.textContent = `${Math.round(e.target.value * 100)}%`;
+                elems.rateInput.oninput = (e) => elems.rateValue.textContent = `${parseFloat(e.target.value).toFixed(1)}`;
                 elems.langSelect.onchange = () => {
                     panelLanguages[index] = elems.langSelect.value;
                     updateVoiceSelect(index, elems.langSelect.value);
