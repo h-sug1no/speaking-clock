@@ -14,7 +14,7 @@
             --card-bg: rgba(30, 30, 30, 0.85);
             --grad-start: #1a1a2e;
             --grad-end: #0f0f0f;
-            --clock-color: #ffffff;
+            --clock-color: #d0d0d0;
             --input-bg: #2a2a2a;
             --input-text: #ffffff;
             --error-color: #ff3b30;
@@ -671,13 +671,29 @@
             const voices = voicesByLang[lang] || [];
             const placeholderOption = '<option value="" disabled class="placeholder">Select Voice</option>';
             elems.voiceSelect.innerHTML = placeholderOption +
-                voices.map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
+                voices.map(x => `<option value="${x.voiceURI}" title="${x.lang}">${x.name}</option>`).join('');
             
             const langKey = lang.replace('-', '_');
             const tmpKey = `_tmpV_${panelIndex}_${langKey}`;
+            let selected = null;
             if (window[tmpKey] !== undefined) {
-                elems.voiceSelect.value = window[tmpKey];
-                if (elems.voiceSelect.value !== window[tmpKey]) elems.voiceSelect.value = "";
+                selected = window[tmpKey];
+                elems.voiceSelect.value = selected;
+            }
+
+            // Safari 遅延・URI不一致時のフォールバック: 有効な option が無ければ先頭の voice を選択
+            if (!elems.voiceSelect.value && voices.length > 0) {
+                elems.voiceSelect.value = voices[0].voiceURI;
+            }
+
+            // まだ空なら強制リセット（placeholder を残す）
+            if (!elems.voiceSelect.value) {
+                elems.voiceSelect.value = "";
+            }
+
+            // 保存値があるのに match しなかった場合は警告を任意でログ
+            if (selected && elems.voiceSelect.value !== selected) {
+                console.warn(`Voice ${selected} not found in ${lang}, selected fallback ${elems.voiceSelect.value || '(none)'}`);
             }
         }
 
