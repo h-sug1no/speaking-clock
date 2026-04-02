@@ -376,31 +376,43 @@
                         <div id="wakeLockStatus">Permission denied by browser environment.</div>
                     </div>
 
-                    <div class="settings-panel" id="panelEn">
-                        <label style="color: var(--accent-color);">English Voice</label>
+                    <div class="settings-panel" id="panel0">
                         <div class="dual-grid">
-                            <select id="voiceSelectEn" required></select>
-                            <input type="number" id="rateInputEn" min="0.5" max="2.0" step="0.1" value="1.0">
+                            <div class="control-group">
+                                <label>Language</label>
+                                <select class="langSelect" data-panel="0"></select>
+                            </div>
+                        </div>
+                        <label style="color: var(--accent-color);">Voice Settings</label>
+                        <div class="dual-grid">
+                            <select id="voiceSelect0" required></select>
+                            <input type="number" id="rateInput0" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
-                            <label>Volume: <span id="volValueEn">100%</span></label>
-                            <input type="range" id="volInputEn" min="0" max="1.5" step="0.05" value="1.0">
+                            <label>Volume: <span id="volValue0">100%</span></label>
+                            <input type="range" id="volInput0" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
-                        <textarea id="templateEn" style="margin-top:8px" placeholder="Enter English template..."></textarea>
-                        <button id="testSpeakEn" class="test-button">Test Speak</button>
+                        <textarea id="template0" style="margin-top:8px" placeholder="Enter template..."></textarea>
+                        <button id="testSpeak0" class="test-button">Test Speak</button>
                     </div>
-                    <div class="settings-panel" id="panelJa">
-                        <label style="color: var(--accent-color);">Japanese Voice</label>
+                    <div class="settings-panel" id="panel1">
                         <div class="dual-grid">
-                            <select id="voiceSelectJa" required></select>
-                            <input type="number" id="rateInputJa" min="0.5" max="2.0" step="0.1" value="1.0">
+                            <div class="control-group">
+                                <label>Language</label>
+                                <select class="langSelect" data-panel="1"></select>
+                            </div>
+                        </div>
+                        <label style="color: var(--accent-color);">Voice Settings</label>
+                        <div class="dual-grid">
+                            <select id="voiceSelect1" required></select>
+                            <input type="number" id="rateInput1" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
-                            <label>Volume: <span id="volValueJa">100%</span></label>
-                            <input type="range" id="volInputJa" min="0" max="1.5" step="0.05" value="1.0">
+                            <label>Volume: <span id="volValue1">100%</span></label>
+                            <input type="range" id="volInput1" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
-                        <textarea id="templateJa" style="margin-top:8px" placeholder="Enter Japanese template..."></textarea>
-                        <button id="testSpeakJa" class="test-button">Test Speak</button>
+                        <textarea id="template1" style="margin-top:8px" placeholder="Enter template..."></textarea>
+                        <button id="testSpeak1" class="test-button">Test Speak</button>
                     </div>
                 </div>
             </div>
@@ -408,35 +420,32 @@
     </div>
 
     <script>
-        // --- Speech Profiles Configuration ---
+        // --- Speech Profiles Configuration (BCP 47 format) ---
         const speechProfiles = [
             {
-                lang: 'en',
-                locale: 'en-US',
-                panelId: 'panelEn',
-                voiceSelectId: 'voiceSelectEn',
-                rateInputId: 'rateInputEn',
-                volInputId: 'volInputEn',
-                volValueId: 'volValueEn',
-                templateId: 'templateEn',
-                testBtnId: 'testSpeakEn',
-                defaultTemplate: "It's {lts}.",
-                langPrefix: 'en-'
+                panelId: 'panel0',
+                voiceSelectId: 'voiceSelect0',
+                rateInputId: 'rateInput0',
+                volInputId: 'volInput0',
+                volValueId: 'volValue0',
+                templateId: 'template0',
+                testBtnId: 'testSpeak0',
+                defaultTemplate: "It's {lts}."
             },
             {
-                lang: 'ja',
-                locale: 'ja-JP',
-                panelId: 'panelJa',
-                voiceSelectId: 'voiceSelectJa',
-                rateInputId: 'rateInputJa',
-                volInputId: 'volInputJa',
-                volValueId: 'volValueJa',
-                templateId: 'templateJa',
-                testBtnId: 'testSpeakJa',
-                defaultTemplate: "{lts}です",
-                langPrefix: 'ja-'
+                panelId: 'panel1',
+                voiceSelectId: 'voiceSelect1',
+                rateInputId: 'rateInput1',
+                volInputId: 'volInput1',
+                volValueId: 'volValue1',
+                templateId: 'template1',
+                testBtnId: 'testSpeak1',
+                defaultTemplate: "{lts}です"
             }
         ];
+
+        // Panel language tracking: keyed by panel index, value is lang (BCP 47 format)
+        const panelLanguages = {};
 
         // --- DOM Elements ---
         const startupOverlay = document.getElementById('startupOverlay');
@@ -458,16 +467,18 @@
 
         // Language-specific elements
         const languageElements = {};
-        speechProfiles.forEach(profile => {
-            languageElements[profile.lang] = {
+        speechProfiles.forEach((profile, index) => {
+            languageElements[index] = {
                 panel: document.getElementById(profile.panelId),
                 voiceSelect: document.getElementById(profile.voiceSelectId),
                 rateInput: document.getElementById(profile.rateInputId),
                 volInput: document.getElementById(profile.volInputId),
                 volValue: document.getElementById(profile.volValueId),
                 template: document.getElementById(profile.templateId),
-                testBtn: document.getElementById(profile.testBtnId)
+                testBtn: document.getElementById(profile.testBtnId),
+                langSelect: document.querySelector(`select[data-panel="${index}"]`)
             };
+            panelLanguages[index] = languageElements[index].langSelect.value;
         });
 
         // --- Settings & State ---
@@ -516,15 +527,16 @@
                 theme: themeSelect.value,
                 vol: volInput.value,
                 wakeLock: wakeLockCheckbox.checked,
-                isCollapsed: isCollapsed
+                isCollapsed: isCollapsed,
+                panelLanguages: panelLanguages
             };
-            speechProfiles.forEach(profile => {
-                const elems = languageElements[profile.lang];
-                const suffix = profile.lang.charAt(0).toUpperCase() + profile.lang.slice(1);
-                data[`vol${suffix}`] = elems.volInput.value;
-                data[`v${suffix}`] = elems.voiceSelect.value;
-                data[`t${suffix}`] = elems.template.value;
-                data[`r${suffix}`] = elems.rateInput.value;
+            speechProfiles.forEach((profile, index) => {
+                const elems = languageElements[index];
+                const langKey = (panelLanguages[index] || 'unknown').replace('-', '_');
+                data[`vol_${index}_${langKey}`] = elems.volInput.value;
+                data[`v_${index}_${langKey}`] = elems.voiceSelect.value;
+                data[`t_${index}_${langKey}`] = elems.template.value;
+                data[`r_${index}_${langKey}`] = elems.rateInput.value;
             });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
@@ -535,13 +547,16 @@
                 theme: 'default',
                 vol: 0.8,
                 isCollapsed: true,
-                wakeLock: false
+                wakeLock: false,
+                panelLanguages: {}
             };
-            speechProfiles.forEach(profile => {
-                const suffix = profile.lang.charAt(0).toUpperCase() + profile.lang.slice(1);
-                defaults[`vol${suffix}`] = 1.0;
-                defaults[`t${suffix}`] = profile.defaultTemplate;
-                defaults[`r${suffix}`] = 1.0;
+            speechProfiles.forEach((profile, index) => {
+                defaults.panelLanguages[index] = languageElements[index].langSelect.value;
+                const lang = defaults.panelLanguages[index];
+                const langKey = lang.replace('-', '_');
+                defaults[`vol_${index}_${langKey}`] = 1.0;
+                defaults[`t_${index}_${langKey}`] = profile.defaultTemplate;
+                defaults[`r_${index}_${langKey}`] = 1.0;
             });
             const loaded = raw ? JSON.parse(raw) : {};
             const s = { ...defaults, ...loaded };
@@ -554,18 +569,19 @@
             applyTheme(s.theme);
             
             volValue.textContent = `${Math.round(s.vol * 100)}%`;
-            speechProfiles.forEach(profile => {
-                const elems = languageElements[profile.lang];
-                const suffix = profile.lang.charAt(0).toUpperCase() + profile.lang.slice(1);
-                const volKey = `vol${suffix}`;
-                const tKey = `t${suffix}`;
-                const rKey = `r${suffix}`;
-                const vKey = `v${suffix}`;
+            speechProfiles.forEach((profile, index) => {
+                const elems = languageElements[index];
+                panelLanguages[index] = s.panelLanguages?.[index] || elems.langSelect.value;
+                const langKey = panelLanguages[index].replace('-', '_');
+                const volKey = `vol_${index}_${langKey}`;
+                const tKey = `t_${index}_${langKey}`;
+                const rKey = `r_${index}_${langKey}`;
+                const vKey = `v_${index}_${langKey}`;
                 elems.volInput.value = s[volKey];
                 elems.template.value = s[tKey];
                 elems.rateInput.value = s[rKey];
                 elems.volValue.textContent = `${Math.round(s[volKey] * 100)}%`;
-                window[`_tmpV${suffix}`] = s[vKey];
+                window[`_tmpV_${index}_${langKey}`] = s[vKey];
             });
 
             if (s.isCollapsed) {
@@ -583,45 +599,72 @@
 
         let synthVoices;
         function setupVoices() {
+            // Initial setup: populate language selects with all available languages
             const tAllVoices = synth.getVoices();
             if (tAllVoices.length === 0) return;
-            if (synthVoices && JSON.stringify(synthVoices) === JSON.stringify(tAllVoices)) return; // 変更がない場合は再処理しない
+            if (synthVoices && JSON.stringify(synthVoices) === JSON.stringify(tAllVoices)) return;
             synthVoices = tAllVoices;
 
-            const filteredVoices = {};
-            speechProfiles.forEach(profile => {
-                filteredVoices[profile.lang] = {};
-            });
-
+            // Extract unique languages from available voices
+            const uniqueLangs = [...new Set(tAllVoices.map(v => v.lang))].sort();
+            
             tAllVoices.forEach((v) => {
                 voiceMapByVoiceURI[v.voiceURI] = v;
-                speechProfiles.forEach(profile => {
-                    if (v.lang.includes(profile.langPrefix)) {
-                        filteredVoices[profile.lang][v.voiceURI] = v;
-                    }
-                });
             });
 
-            const placeholderOption = '<option value="" disabled class="placeholder">Select Voice</option>';
-            speechProfiles.forEach(profile => {
-                const elems = languageElements[profile.lang];
-                elems.voiceSelect.innerHTML = placeholderOption +
-                    Object.values(filteredVoices[profile.lang]).map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
+            // Update language selects with all available languages
+            speechProfiles.forEach((profile, index) => {
+                const elems = languageElements[index];
+                const langSelect = elems.langSelect;
                 
-                const tmpKey = `_tmpV${profile.lang.charAt(0).toUpperCase() + profile.lang.slice(1)}`;
-                if (window[tmpKey] !== undefined) {
-                    elems.voiceSelect.value = window[tmpKey];
-                    if (elems.voiceSelect.value !== window[tmpKey]) elems.voiceSelect.value = "";
+                // Build language options
+                const langOptions = uniqueLangs.map(lang => `<option value="${lang}">${lang}</option>`).join('');
+                langSelect.innerHTML = '<option value="" disabled class="placeholder">Select Language</option>' + langOptions;
+                
+                // Restore previously selected language if available
+                if (panelLanguages[index] && uniqueLangs.includes(panelLanguages[index])) {
+                    langSelect.value = panelLanguages[index];
+                } else if (uniqueLangs.length > 0) {
+                    // Default to first available language
+                    panelLanguages[index] = uniqueLangs[0];
+                    langSelect.value = uniqueLangs[0];
                 }
+            });
+
+            // Update all voice selects after language setup
+            speechProfiles.forEach((profile, index) => {
+                updateVoiceSelect(index, panelLanguages[index]);
             });
         }
 
+        function updateVoiceSelect(panelIndex, lang) {
+            // Update voice select for a specific panel when language changes
+            const tAllVoices = synth.getVoices();
+            const voicesByLang = {};
+            tAllVoices.forEach((v) => {
+                if (!voicesByLang[v.lang]) voicesByLang[v.lang] = [];
+                voicesByLang[v.lang].push(v);
+            });
+
+            const elems = languageElements[panelIndex];
+            const voices = voicesByLang[lang] || [];
+            const placeholderOption = '<option value="" disabled class="placeholder">Select Voice</option>';
+            elems.voiceSelect.innerHTML = placeholderOption +
+                voices.map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
+            
+            const langKey = lang.replace('-', '_');
+            const tmpKey = `_tmpV_${panelIndex}_${langKey}`;
+            if (window[tmpKey] !== undefined) {
+                elems.voiceSelect.value = window[tmpKey];
+                if (elems.voiceSelect.value !== window[tmpKey]) elems.voiceSelect.value = "";
+            }
+        }
+
         function processTemplate(tpl, lang, {h, m, s, now} = {}) {
-            const profile = speechProfiles.find(p => p.lang === lang);
             return tpl.replace(/{h}/g, h)
                 .replace(/{m}/g, m)
                 .replace(/{s}/g, s)
-                .replace(/{lts}/g, now.toLocaleTimeString(profile.locale, {
+                .replace(/{lts}/g, now.toLocaleTimeString(lang, {
                     /*
                     hour: '2-digit',
                     minute: '2-digit',
@@ -631,14 +674,15 @@
             ;
         }
 
-        function testSpeak(lang) {
+        function testSpeak(panelIndex) {
             synth.cancel();
 
             const now = new Date();
             const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
             
             const masterVol = parseFloat(volInput.value);
-            const elems = languageElements[lang];
+            const elems = languageElements[panelIndex];
+            const lang = panelLanguages[panelIndex];
             const tmpArgs = {h, m, s, now};
             const vol = parseFloat(elems.volInput.value);
             const utterance = new SpeechSynthesisUtterance(processTemplate(elems.template.value, lang, tmpArgs));
@@ -675,10 +719,11 @@
             statusBadge.classList.add('speaking');
 
             const tmpArgs = {h, m, s, now: new Date()};
-            const utterances = speechProfiles.map(profile => {
-                const elems = languageElements[profile.lang];
+            const utterances = speechProfiles.map((profile, index) => {
+                const elems = languageElements[index];
                 const vol = parseFloat(elems.volInput.value);
-                const u = new SpeechSynthesisUtterance(processTemplate(elems.template.value, profile.lang, tmpArgs));
+                const lang = panelLanguages[index];
+                const u = new SpeechSynthesisUtterance(processTemplate(elems.template.value, lang, tmpArgs));
                 u.voice = voiceMapByVoiceURI[elems.voiceSelect.value];
                 u.rate = parseFloat(elems.rateInput.value);
                 u.volume = masterVol * vol;
@@ -732,10 +777,15 @@
                 saveSettings();
             };
             
-            speechProfiles.forEach(profile => {
-                const elems = languageElements[profile.lang];
-                elems.testBtn.onclick = (e) => { e.stopPropagation(); testSpeak(profile.lang); };
+            speechProfiles.forEach((profile, index) => {
+                const elems = languageElements[index];
+                elems.testBtn.onclick = (e) => { e.stopPropagation(); testSpeak(index); };
                 elems.volInput.oninput = (e) => elems.volValue.textContent = `${Math.round(e.target.value * 100)}%`;
+                elems.langSelect.onchange = () => {
+                    panelLanguages[index] = elems.langSelect.value;
+                    updateVoiceSelect(index, elems.langSelect.value);
+                    saveSettings();
+                };
             });
             ambientTestTrigger.onclick = (e) => {
                 const rect = timerCard.getBoundingClientRect();
