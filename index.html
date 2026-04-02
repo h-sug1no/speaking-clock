@@ -746,12 +746,20 @@
             synth.speak(utterances[0]);
         }
 
+        let lastTime = {h: -1, m: -1, s: -1};
+
         function tick() {
             const now = new Date();
             const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
-            dateDisplay.textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
-            clockDisplay.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-            if (targetMinutes.includes(m) && targetSeconds.includes(s)) announce(h, m, s);
+            
+            // Only update display when second changes
+            if (s !== lastTime.s || m !== lastTime.m || h !== lastTime.h) {
+                lastTime = {h, m, s};
+                dateDisplay.textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
+                clockDisplay.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                if (targetMinutes.includes(m) && targetSeconds.includes(s)) announce(h, m, s);
+            }
+            
             requestAnimationFrame(tick);
         }
 
