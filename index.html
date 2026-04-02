@@ -408,10 +408,10 @@
     </div>
 
     <script>
-        // --- Language Configuration ---
-        const languages = ['en', 'ja'];
-        const languageConfig = {
-            en: {
+        // --- Speech Profiles Configuration ---
+        const speechProfiles = [
+            {
+                lang: 'en',
                 locale: 'en-US',
                 panelId: 'panelEn',
                 voiceSelectId: 'voiceSelectEn',
@@ -423,7 +423,8 @@
                 defaultTemplate: "It's {lts}.",
                 langPrefix: 'en-'
             },
-            ja: {
+            {
+                lang: 'ja',
                 locale: 'ja-JP',
                 panelId: 'panelJa',
                 voiceSelectId: 'voiceSelectJa',
@@ -435,7 +436,7 @@
                 defaultTemplate: "{lts}です",
                 langPrefix: 'ja-'
             }
-        };
+        ];
 
         // --- DOM Elements ---
         const startupOverlay = document.getElementById('startupOverlay');
@@ -457,16 +458,15 @@
 
         // Language-specific elements
         const languageElements = {};
-        languages.forEach(lang => {
-            const config = languageConfig[lang];
-            languageElements[lang] = {
-                panel: document.getElementById(config.panelId),
-                voiceSelect: document.getElementById(config.voiceSelectId),
-                rateInput: document.getElementById(config.rateInputId),
-                volInput: document.getElementById(config.volInputId),
-                volValue: document.getElementById(config.volValueId),
-                template: document.getElementById(config.templateId),
-                testBtn: document.getElementById(config.testBtnId)
+        speechProfiles.forEach(profile => {
+            languageElements[profile.lang] = {
+                panel: document.getElementById(profile.panelId),
+                voiceSelect: document.getElementById(profile.voiceSelectId),
+                rateInput: document.getElementById(profile.rateInputId),
+                volInput: document.getElementById(profile.volInputId),
+                volValue: document.getElementById(profile.volValueId),
+                template: document.getElementById(profile.templateId),
+                testBtn: document.getElementById(profile.testBtnId)
             };
         });
 
@@ -518,9 +518,9 @@
                 wakeLock: wakeLockCheckbox.checked,
                 isCollapsed: isCollapsed
             };
-            languages.forEach(lang => {
-                const elems = languageElements[lang];
-                const suffix = lang.charAt(0).toUpperCase() + lang.slice(1);
+            speechProfiles.forEach(profile => {
+                const elems = languageElements[profile.lang];
+                const suffix = profile.lang.charAt(0).toUpperCase() + profile.lang.slice(1);
                 data[`vol${suffix}`] = elems.volInput.value;
                 data[`v${suffix}`] = elems.voiceSelect.value;
                 data[`t${suffix}`] = elems.template.value;
@@ -537,11 +537,10 @@
                 isCollapsed: true,
                 wakeLock: false
             };
-            languages.forEach(lang => {
-                const config = languageConfig[lang];
-                const suffix = lang.charAt(0).toUpperCase() + lang.slice(1);
+            speechProfiles.forEach(profile => {
+                const suffix = profile.lang.charAt(0).toUpperCase() + profile.lang.slice(1);
                 defaults[`vol${suffix}`] = 1.0;
-                defaults[`t${suffix}`] = config.defaultTemplate;
+                defaults[`t${suffix}`] = profile.defaultTemplate;
                 defaults[`r${suffix}`] = 1.0;
             });
             const loaded = raw ? JSON.parse(raw) : {};
@@ -555,9 +554,9 @@
             applyTheme(s.theme);
             
             volValue.textContent = `${Math.round(s.vol * 100)}%`;
-            languages.forEach(lang => {
-                const elems = languageElements[lang];
-                const suffix = lang.charAt(0).toUpperCase() + lang.slice(1);
+            speechProfiles.forEach(profile => {
+                const elems = languageElements[profile.lang];
+                const suffix = profile.lang.charAt(0).toUpperCase() + profile.lang.slice(1);
                 const volKey = `vol${suffix}`;
                 const tKey = `t${suffix}`;
                 const rKey = `r${suffix}`;
@@ -590,27 +589,26 @@
             synthVoices = tAllVoices;
 
             const filteredVoices = {};
-            languages.forEach(lang => {
-                filteredVoices[lang] = {};
+            speechProfiles.forEach(profile => {
+                filteredVoices[profile.lang] = {};
             });
 
             tAllVoices.forEach((v) => {
                 voiceMapByVoiceURI[v.voiceURI] = v;
-                languages.forEach(lang => {
-                    const config = languageConfig[lang];
-                    if (v.lang.includes(config.langPrefix)) {
-                        filteredVoices[lang][v.voiceURI] = v;
+                speechProfiles.forEach(profile => {
+                    if (v.lang.includes(profile.langPrefix)) {
+                        filteredVoices[profile.lang][v.voiceURI] = v;
                     }
                 });
             });
 
             const placeholderOption = '<option value="" disabled class="placeholder">Select Voice</option>';
-            languages.forEach(lang => {
-                const elems = languageElements[lang];
+            speechProfiles.forEach(profile => {
+                const elems = languageElements[profile.lang];
                 elems.voiceSelect.innerHTML = placeholderOption +
-                    Object.values(filteredVoices[lang]).map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
+                    Object.values(filteredVoices[profile.lang]).map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
                 
-                const tmpKey = `_tmpV${lang.charAt(0).toUpperCase() + lang.slice(1)}`;
+                const tmpKey = `_tmpV${profile.lang.charAt(0).toUpperCase() + profile.lang.slice(1)}`;
                 if (window[tmpKey] !== undefined) {
                     elems.voiceSelect.value = window[tmpKey];
                     if (elems.voiceSelect.value !== window[tmpKey]) elems.voiceSelect.value = "";
@@ -619,11 +617,11 @@
         }
 
         function processTemplate(tpl, lang, {h, m, s, now} = {}) {
-            const config = languageConfig[lang];
+            const profile = speechProfiles.find(p => p.lang === lang);
             return tpl.replace(/{h}/g, h)
                 .replace(/{m}/g, m)
                 .replace(/{s}/g, s)
-                .replace(/{lts}/g, now.toLocaleTimeString(config.locale, {
+                .replace(/{lts}/g, now.toLocaleTimeString(profile.locale, {
                     /*
                     hour: '2-digit',
                     minute: '2-digit',
@@ -641,7 +639,6 @@
             
             const masterVol = parseFloat(volInput.value);
             const elems = languageElements[lang];
-            const config = languageConfig[lang];
             const tmpArgs = {h, m, s, now};
             const vol = parseFloat(elems.volInput.value);
             const utterance = new SpeechSynthesisUtterance(processTemplate(elems.template.value, lang, tmpArgs));
@@ -678,10 +675,10 @@
             statusBadge.classList.add('speaking');
 
             const tmpArgs = {h, m, s, now: new Date()};
-            const utterances = languages.map(lang => {
-                const elems = languageElements[lang];
+            const utterances = speechProfiles.map(profile => {
+                const elems = languageElements[profile.lang];
                 const vol = parseFloat(elems.volInput.value);
-                const u = new SpeechSynthesisUtterance(processTemplate(elems.template.value, lang, tmpArgs));
+                const u = new SpeechSynthesisUtterance(processTemplate(elems.template.value, profile.lang, tmpArgs));
                 u.voice = voiceMapByVoiceURI[elems.voiceSelect.value];
                 u.rate = parseFloat(elems.rateInput.value);
                 u.volume = masterVol * vol;
@@ -735,9 +732,9 @@
                 saveSettings();
             };
             
-            languages.forEach(lang => {
-                const elems = languageElements[lang];
-                elems.testBtn.onclick = (e) => { e.stopPropagation(); testSpeak(lang); };
+            speechProfiles.forEach(profile => {
+                const elems = languageElements[profile.lang];
+                elems.testBtn.onclick = (e) => { e.stopPropagation(); testSpeak(profile.lang); };
                 elems.volInput.oninput = (e) => elems.volValue.textContent = `${Math.round(e.target.value * 100)}%`;
             });
             ambientTestTrigger.onclick = (e) => {
