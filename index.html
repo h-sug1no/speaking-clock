@@ -368,7 +368,7 @@
 <body id="rootBody">
 
     <div id="startupOverlay">
-        <button id="startupButton">Start Clock</button>
+        <button id="startupButton" autofocus>Start Clock</button>
     </div>
 
     <div class="app-container" id="mainBg">
@@ -914,7 +914,7 @@
         startupButton.onclick = () => {
             synth.cancel();
             synth.speak(new SpeechSynthesisUtterance(' '));
-            startupOverlay.style.opacity = '0';
+            startupOverlay.style.opacity = '0'; // fire css opacity transition
             setTimeout(() => startupOverlay.style.display = 'none', 500);
             main();
         };
