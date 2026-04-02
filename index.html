@@ -430,7 +430,8 @@
                 volValueId: 'volValue0',
                 templateId: 'template0',
                 testBtnId: 'testSpeak0',
-                defaultTemplate: "It's {lts}."
+                defaultTemplate: "It's {lts}.",
+                defaultLang: 'en-US'
             },
             {
                 panelId: 'panel1',
@@ -440,7 +441,8 @@
                 volValueId: 'volValue1',
                 templateId: 'template1',
                 testBtnId: 'testSpeak1',
-                defaultTemplate: "{lts}です"
+                defaultTemplate: "{lts}です",
+                defaultLang: 'ja-JP'
             }
         ];
 
@@ -621,11 +623,30 @@
                 const langOptions = uniqueLangs.map(lang => `<option value="${lang}">${lang}</option>`).join('');
                 langSelect.innerHTML = '<option value="" disabled class="placeholder">Select Language</option>' + langOptions;
                 
-                // Restore previously selected language if available
+                // Set default language based on profile.defaultLang
+                let defaultLang = '';
+                if (uniqueLangs.includes(profile.defaultLang)) {
+                    defaultLang = profile.defaultLang;
+                } else {
+                    // Find language starting with the prefix (e.g., 'en-' for 'en-US')
+                    const prefix = profile.defaultLang.split('-')[0] + '-';
+                    let fallbackLang = uniqueLangs.find(lang => lang.startsWith(prefix));
+                    if (!fallbackLang) {
+                        // If no prefix match, try just the language code (e.g., 'ja' for 'ja-JP')
+                        const langCode = profile.defaultLang.split('-')[0];
+                        fallbackLang = uniqueLangs.find(lang => lang === langCode);
+                    }
+                    if (fallbackLang) defaultLang = fallbackLang;
+                }
+                
+                // Restore previously selected language if available, otherwise use default
                 if (panelLanguages[index] && uniqueLangs.includes(panelLanguages[index])) {
                     langSelect.value = panelLanguages[index];
+                } else if (defaultLang) {
+                    panelLanguages[index] = defaultLang;
+                    langSelect.value = defaultLang;
                 } else if (uniqueLangs.length > 0) {
-                    // Default to first available language
+                    // Fallback to first available language
                     panelLanguages[index] = uniqueLangs[0];
                     langSelect.value = uniqueLangs[0];
                 }
