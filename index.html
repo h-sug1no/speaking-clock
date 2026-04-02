@@ -408,6 +408,35 @@
     </div>
 
     <script>
+        // --- Language Configuration ---
+        const languages = ['en', 'ja'];
+        const languageConfig = {
+            en: {
+                locale: 'en-US',
+                panelId: 'panelEn',
+                voiceSelectId: 'voiceSelectEn',
+                rateInputId: 'rateInputEn',
+                volInputId: 'volInputEn',
+                volValueId: 'volValueEn',
+                templateId: 'templateEn',
+                testBtnId: 'testSpeakEn',
+                defaultTemplate: "It's {lts}.",
+                langPrefix: 'en-'
+            },
+            ja: {
+                locale: 'ja-JP',
+                panelId: 'panelJa',
+                voiceSelectId: 'voiceSelectJa',
+                rateInputId: 'rateInputJa',
+                volInputId: 'volInputJa',
+                volValueId: 'volValueJa',
+                templateId: 'templateJa',
+                testBtnId: 'testSpeakJa',
+                defaultTemplate: "{lts}です",
+                langPrefix: 'ja-'
+            }
+        };
+
         // --- DOM Elements ---
         const startupOverlay = document.getElementById('startupOverlay');
         const startupButton = document.getElementById('startupButton');
@@ -422,23 +451,24 @@
         const themeSelect = document.getElementById('themeSelect');
         const volInput = document.getElementById('volInput');
         const volValue = document.getElementById('volValue');
-        const volInputEn = document.getElementById('volInputEn');
-        const volValueEn = document.getElementById('volValueEn');
-        const volInputJa = document.getElementById('volInputJa');
-        const volValueJa = document.getElementById('volValueJa');
-        const voiceSelectEn = document.getElementById('voiceSelectEn');
-        const rateInputEn = document.getElementById('rateInputEn');
-        const templateEn = document.getElementById('templateEn');
-        const voiceSelectJa = document.getElementById('voiceSelectJa');
-        const rateInputJa = document.getElementById('rateInputJa');
-        const templateJa = document.getElementById('templateJa');
         const ambientTestTrigger = document.getElementById('ambientTestTrigger');
         const wakeLockCheckbox = document.getElementById('wakeLockCheckbox');
         const wakeLockStatus = document.getElementById('wakeLockStatus');
-        const testSpeakEnBtn = document.getElementById('testSpeakEn');
-        const testSpeakJaBtn = document.getElementById('testSpeakJa');
-        const panelEn = document.getElementById('panelEn');
-        const panelJa = document.getElementById('panelJa');
+
+        // Language-specific elements
+        const languageElements = {};
+        languages.forEach(lang => {
+            const config = languageConfig[lang];
+            languageElements[lang] = {
+                panel: document.getElementById(config.panelId),
+                voiceSelect: document.getElementById(config.voiceSelectId),
+                rateInput: document.getElementById(config.rateInputId),
+                volInput: document.getElementById(config.volInputId),
+                volValue: document.getElementById(config.volValueId),
+                template: document.getElementById(config.templateId),
+                testBtn: document.getElementById(config.testBtnId)
+            };
+        });
 
         // --- Settings & State ---
         const targetMinutes = [0, 7, 15, 22, 30, 37, 45, 52];
@@ -485,48 +515,59 @@
             const data = {
                 theme: themeSelect.value,
                 vol: volInput.value,
-                volEn: volInputEn.value,
-                volJa: volInputJa.value,
-                vEn: voiceSelectEn.value,
-                vJa: voiceSelectJa.value,
-                tEn: templateEn.value,
-                tJa: templateJa.value,
-                rEn: rateInputEn.value,
-                rJa: rateInputJa.value,
                 wakeLock: wakeLockCheckbox.checked,
                 isCollapsed: isCollapsed
             };
+            languages.forEach(lang => {
+                const elems = languageElements[lang];
+                const suffix = lang.charAt(0).toUpperCase() + lang.slice(1);
+                data[`vol${suffix}`] = elems.volInput.value;
+                data[`v${suffix}`] = elems.voiceSelect.value;
+                data[`t${suffix}`] = elems.template.value;
+                data[`r${suffix}`] = elems.rateInput.value;
+            });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
 
         function loadSettings() {
             const raw = localStorage.getItem(STORAGE_KEY);
             const defaults = {
-                theme: 'default', vol: 0.8, volEn: 1.0, volJa: 1.0,
-                tEn: "It's {lts}.",
-                tJa: "{lts}です",
-                rEn: 1.0, rJa: 1.0, isCollapsed: true,
+                theme: 'default',
+                vol: 0.8,
+                isCollapsed: true,
                 wakeLock: false
             };
+            languages.forEach(lang => {
+                const config = languageConfig[lang];
+                const suffix = lang.charAt(0).toUpperCase() + lang.slice(1);
+                defaults[`vol${suffix}`] = 1.0;
+                defaults[`t${suffix}`] = config.defaultTemplate;
+                defaults[`r${suffix}`] = 1.0;
+            });
             const loaded = raw ? JSON.parse(raw) : {};
             const s = { ...defaults, ...loaded };
             
             themeSelect.value = s.theme;
             volInput.value = s.vol;
-            volInputEn.value = s.volEn;
-            volInputJa.value = s.volJa;
-            templateEn.value = s.tEn;
-            templateJa.value = s.tJa;
-            rateInputEn.value = s.rEn;
-            rateInputJa.value = s.rJa;
             wakeLockCheckbox.checked = s.wakeLock;
 
             // 初期ロード時にテーマを適用
             applyTheme(s.theme);
             
             volValue.textContent = `${Math.round(s.vol * 100)}%`;
-            volValueEn.textContent = `${Math.round(s.volEn * 100)}%`;
-            volValueJa.textContent = `${Math.round(s.volJa * 100)}%`;
+            languages.forEach(lang => {
+                const elems = languageElements[lang];
+                const suffix = lang.charAt(0).toUpperCase() + lang.slice(1);
+                const volKey = `vol${suffix}`;
+                const tKey = `t${suffix}`;
+                const rKey = `r${suffix}`;
+                const vKey = `v${suffix}`;
+                elems.volInput.value = s[volKey];
+                elems.template.value = s[tKey];
+                elems.rateInput.value = s[rKey];
+                elems.volValue.textContent = `${Math.round(s[volKey] * 100)}%`;
+                window[`_tmpV${suffix}`] = s[vKey];
+            });
 
             if (s.isCollapsed) {
                 settingsBody.classList.add('collapsed');
@@ -539,48 +580,50 @@
             if (s.wakeLock) {
                 requestWakeLock();
             }
-
-            window._tmpVEn = s.vEn;
-            window._tmpVJa = s.vJa;
         }
 
         let synthVoices;
         function setupVoices() {
-
             const tAllVoices = synth.getVoices();
             if (tAllVoices.length === 0) return;
             if (synthVoices && JSON.stringify(synthVoices) === JSON.stringify(tAllVoices)) return; // 変更がない場合は再処理しない
             synthVoices = tAllVoices;
 
-            const fEn = {};
-            const fJa = {};
+            const filteredVoices = {};
+            languages.forEach(lang => {
+                filteredVoices[lang] = {};
+            });
 
             tAllVoices.forEach((v) => {
                 voiceMapByVoiceURI[v.voiceURI] = v;
-                if (v.lang.includes('en-')) fEn[v.voiceURI] = v;
-                if (v.lang.includes('ja-')) fJa[v.voiceURI] = v;
+                languages.forEach(lang => {
+                    const config = languageConfig[lang];
+                    if (v.lang.includes(config.langPrefix)) {
+                        filteredVoices[lang][v.voiceURI] = v;
+                    }
+                });
             });
+
             const placeholderOption = '<option value="" disabled class="placeholder">Select Voice</option>';
-            voiceSelectEn.innerHTML = placeholderOption +
-                Object.values(fEn).map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
-            voiceSelectJa.innerHTML = placeholderOption +
-                Object.values(fJa).map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
-            
-            if (window._tmpVEn !== undefined) {
-                voiceSelectEn.value = window._tmpVEn;
-                if (voiceSelectEn.value !== window._tmpVEn) voiceSelectEn.value = ""; // もし保存されている値が現在の環境で見つからない場合は選択をクリア
-            }
-            if (window._tmpVJa !== undefined) {
-                voiceSelectJa.value = window._tmpVJa;
-                if (voiceSelectJa.value !== window._tmpVJa) voiceSelectJa.value = ""; // もし保存されている値が現在の環境で見つからない場合は選択をクリア
-            }
+            languages.forEach(lang => {
+                const elems = languageElements[lang];
+                elems.voiceSelect.innerHTML = placeholderOption +
+                    Object.values(filteredVoices[lang]).map(x => `<option value="${x.voiceURI}">${x.name}</option>`).join('');
+                
+                const tmpKey = `_tmpV${lang.charAt(0).toUpperCase() + lang.slice(1)}`;
+                if (window[tmpKey] !== undefined) {
+                    elems.voiceSelect.value = window[tmpKey];
+                    if (elems.voiceSelect.value !== window[tmpKey]) elems.voiceSelect.value = "";
+                }
+            });
         }
 
         function processTemplate(tpl, lang, {h, m, s, now} = {}) {
+            const config = languageConfig[lang];
             return tpl.replace(/{h}/g, h)
                 .replace(/{m}/g, m)
                 .replace(/{s}/g, s)
-                .replace(/{lts}/g, now.toLocaleTimeString(lang === 'en' ? 'en-US' : 'ja-JP', {
+                .replace(/{lts}/g, now.toLocaleTimeString(config.locale, {
                     /*
                     hour: '2-digit',
                     minute: '2-digit',
@@ -597,41 +640,29 @@
             const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
             
             const masterVol = parseFloat(volInput.value);
-
-            let utterance;
-            let targetPanel;
+            const elems = languageElements[lang];
+            const config = languageConfig[lang];
             const tmpArgs = {h, m, s, now};
-            if (lang === 'en') {
-                const volEn = parseFloat(volInputEn.value);
-                utterance = new SpeechSynthesisUtterance(processTemplate(templateEn.value, lang, tmpArgs));
-                utterance.voice = voiceMapByVoiceURI[voiceSelectEn.value];
-                utterance.rate = parseFloat(rateInputEn.value);
-                utterance.volume = masterVol * volEn;
-                targetPanel = panelEn;
-            } else if (lang === 'ja') {
-                const volJa = parseFloat(volInputJa.value);
-                utterance = new SpeechSynthesisUtterance(processTemplate(templateJa.value, lang, tmpArgs));
-                utterance.voice = voiceMapByVoiceURI[voiceSelectJa.value];
-                utterance.rate = parseFloat(rateInputJa.value);
-                utterance.volume = masterVol * volJa;
-                targetPanel = panelJa;
-            }
+            const vol = parseFloat(elems.volInput.value);
+            const utterance = new SpeechSynthesisUtterance(processTemplate(elems.template.value, lang, tmpArgs));
+            utterance.voice = voiceMapByVoiceURI[elems.voiceSelect.value];
+            utterance.rate = parseFloat(elems.rateInput.value);
+            utterance.volume = masterVol * vol;
+            const targetPanel = elems.panel;
 
-            if(utterance) {
-                utterance.onstart = () => {
-                    targetPanel.classList.add('is-testing');
-                    statusBadge.textContent = "Testing...";
-                    statusBadge.classList.add('speaking');
-                };
-                const onEnd = () => {
-                    targetPanel.classList.remove('is-testing');
-                    statusBadge.textContent = "Active";
-                    statusBadge.classList.remove('speaking');
-                };
-                utterance.onend = onEnd;
-                utterance.onerror = onEnd;
-                synth.speak(utterance);
-            }
+            utterance.onstart = () => {
+                targetPanel.classList.add('is-testing');
+                statusBadge.textContent = "Testing...";
+                statusBadge.classList.add('speaking');
+            };
+            const onEnd = () => {
+                targetPanel.classList.remove('is-testing');
+                statusBadge.textContent = "Active";
+                statusBadge.classList.remove('speaking');
+            };
+            utterance.onend = onEnd;
+            utterance.onerror = onEnd;
+            synth.speak(utterance);
         }
 
         function announce(h, m, s, isManual = false) {
@@ -641,35 +672,36 @@
 
             synth.cancel();
             const masterVol = parseFloat(volInput.value);
-            const volEn = parseFloat(volInputEn.value);
-            const volJa = parseFloat(volInputJa.value);
 
             timerCard.classList.add('is-speaking');
             statusBadge.textContent = "Speaking...";
             statusBadge.classList.add('speaking');
 
             const tmpArgs = {h, m, s, now: new Date()};
-            const uEn = new SpeechSynthesisUtterance(processTemplate(templateEn.value, 'en', tmpArgs));
-            uEn.voice = voiceMapByVoiceURI[voiceSelectEn.value];
-            uEn.rate = parseFloat(rateInputEn.value);
-            uEn.volume = masterVol * volEn;
-
-            const uJa = new SpeechSynthesisUtterance(processTemplate(templateJa.value, 'ja', tmpArgs));
-            uJa.voice = voiceMapByVoiceURI[voiceSelectJa.value];
-            uJa.rate = parseFloat(rateInputJa.value);
-            uJa.volume = masterVol * volJa;
+            const utterances = languages.map(lang => {
+                const elems = languageElements[lang];
+                const vol = parseFloat(elems.volInput.value);
+                const u = new SpeechSynthesisUtterance(processTemplate(elems.template.value, lang, tmpArgs));
+                u.voice = voiceMapByVoiceURI[elems.voiceSelect.value];
+                u.rate = parseFloat(elems.rateInput.value);
+                u.volume = masterVol * vol;
+                return u;
+            });
 
             const onEnd = () => {
                 timerCard.classList.remove('is-speaking');
                 statusBadge.textContent = "Active";
                 statusBadge.classList.remove('speaking');
             };
-            uJa.onend = onEnd;
-            uJa.onerror = onEnd;
-            uEn.onerror = onEnd;
-
-            uEn.onend = () => { setTimeout(() => synth.speak(uJa), 300); };
-            synth.speak(uEn);
+            utterances.forEach((u, index) => {
+                u.onerror = onEnd;
+                if (index === utterances.length - 1) {
+                    u.onend = onEnd;
+                } else {
+                    u.onend = () => { setTimeout(() => synth.speak(utterances[index + 1]), 300); };
+                }
+            });
+            synth.speak(utterances[0]);
         }
 
         function tick() {
@@ -703,8 +735,11 @@
                 saveSettings();
             };
             
-            testSpeakEnBtn.onclick = (e) => { e.stopPropagation(); testSpeak('en'); };
-            testSpeakJaBtn.onclick = (e) => { e.stopPropagation(); testSpeak('ja'); };
+            languages.forEach(lang => {
+                const elems = languageElements[lang];
+                elems.testBtn.onclick = (e) => { e.stopPropagation(); testSpeak(lang); };
+                elems.volInput.oninput = (e) => elems.volValue.textContent = `${Math.round(e.target.value * 100)}%`;
+            });
             ambientTestTrigger.onclick = (e) => {
                 const rect = timerCard.getBoundingClientRect();
                 const ripple = document.createElement('span');
@@ -720,8 +755,6 @@
             };
             
             volInput.oninput = (e) => volValue.textContent = `${Math.round(e.target.value * 100)}%`;
-            volInputEn.oninput = (e) => volValueEn.textContent = `${Math.round(e.target.value * 100)}%`;
-            volInputJa.oninput = (e) => volValueJa.textContent = `${Math.round(e.target.value * 100)}%`;
 
             document.querySelectorAll('input, select, textarea').forEach(el => {
                 // themeSelectは別途onchangeで処理しているので除外しても良いが、一括保存のため残す
