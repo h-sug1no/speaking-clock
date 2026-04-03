@@ -45,9 +45,10 @@ const targetSeconds = [0, 30];
 
 テンプレート入力欄では以下の変数が使用できます。
 
-- `{h}`: 現在の「時」
-- `{m}`: 現在の「分」
-- `{s}`: 現在の「秒」
+- `{h}`: 現在の「時」（例: 14）
+- `{m}`: 現在の「分」（例: 30）
+- `{s}`: 現在の「秒」（例: 45）
+- `{lts}`: 現在の時刻をロケールに応じた読み上げテキストで置き換え（例: "2:30:45 PM" または "14:30:45"等）
 
 ## 動作環境
 
@@ -60,3 +61,4 @@ const targetSeconds = [0, 30];
 
 ---
 *This project was enhanced by Gemini, an AI assistant from Google.*
+*This project was enhanced by GitHub Copilot *
