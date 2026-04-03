@@ -76,7 +76,7 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            transition: opacity 0.5s ease;
+            transition: opacity 1s ease;
         }
 
         #startupButton {
@@ -199,6 +199,10 @@
             font-size: 44px;
             margin-bottom: 12px;
             opacity: 1;
+        }
+
+        #clockContent {
+            font-variant-numeric: tabular-nums;
         }
 
         .clock-display {
@@ -380,10 +384,19 @@
                     <span id="toggleText">Show Settings</span> ⚙️
                 </button>
             </div>
-            <div class="date-display" id="dateDisplay">----.--.-- (---)</div>
-            <div class="clock-display" id="clock">00:00:00</div>
+            <div id="clockContent">
+                <div class="date-display" id="dateDisplay">----.--.-- (---)</div>
+                <div class="clock-display" id="clock">00:00:00</div>
+            </div>
             <div id="settingsBody">
                 <div class="control-section">
+                    <div id="wakeLockGroup" class="control-group">
+                        <label for="wakeLockCheckbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; justify-content: space-between;">
+                            Keep Screen On
+                            <input type="checkbox" id="wakeLockCheckbox" style="width: auto; height: 20px; accent-color: var(--accent-color);">
+                        </label>
+                        <div id="wakeLockStatus">Permission denied by browser environment.</div>
+                    </div>
                     <div class="dual-grid">
                         <div class="control-group">
                             <label>Theme</label>
@@ -398,13 +411,25 @@
                             <input type="range" id="volInput" min="0" max="2" step="0.05" value="0.8">
                         </div>
                     </div>
-                    
-                    <div id="wakeLockGroup" class="control-group">
-                        <label for="wakeLockCheckbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; justify-content: space-between;">
-                            Keep Screen On
-                            <input type="checkbox" id="wakeLockCheckbox" style="width: auto; height: 20px; accent-color: var(--accent-color);">
+                    <div id="fontSelectGroup" class="control-group">
+                        <label for="fontSelect" style="display: flex; align-items: center; gap: 8px; cursor: pointer; justify-content: space-between;">
+                            Font
                         </label>
-                        <div id="wakeLockStatus">Permission denied by browser environment.</div>
+                        <select id="fontSelector">
+                            <option value="system-ui">system-ui</option>
+                            <option value="ui-serif">ui-serif</option>
+                            <option value="ui-sans-serif">ui-sans-serif</option>
+                            <option value="ui-monospace" selected>ui-monospace</option>
+                            <option value="ui-rounded">ui-rounded</option>
+                            <option value="serif">serif</option>
+                            <option value="sans-serif">sans-serif</option>
+                            <option value="monospace">monospace</option>
+                            <option value="cursive">cursive</option>
+                            <option value="fantasy">fantasy</option>
+                            <option value="math">math</option>
+                            <option value="fangsong">fangsong</option>
+                        </select>
+
                     </div>
 
                     <div class="settings-panel" id="panel0">
@@ -436,7 +461,6 @@
                                 <select class="langSelect" data-panel="1"></select>
                             </div>
                         </div>
-                        <label style="color: var(--accent-color);">Voice Settings</label>
                         <div class="control-group">
                             <label for="voiceSelect1">Voice</label>
                             <select id="voiceSelect1"></select>
@@ -504,6 +528,15 @@
         const ambientTestTrigger = document.getElementById('ambientTestTrigger');
         const wakeLockCheckbox = document.getElementById('wakeLockCheckbox');
         const wakeLockStatus = document.getElementById('wakeLockStatus');
+        const fontSelector = document.getElementById('fontSelector');
+        const clockContent = document.getElementById('clockContent');
+
+        const applyClockFont = (font) => {
+            clockContent.style.fontFamily = font;
+        };
+        fontSelector.addEventListener('change', (e) => {
+            applyClockFont(e.target.value);
+        });
 
         // Language-specific elements
         const languageElements = {};
@@ -569,7 +602,8 @@
                 vol: volInput.value,
                 wakeLock: wakeLockCheckbox.checked,
                 isCollapsed: isCollapsed,
-                panelLanguages: panelLanguages
+                panelLanguages: panelLanguages,
+                font: fontSelector.value
             };
             speechProfiles.forEach((profile, index) => {
                 const elems = languageElements[index];
@@ -589,7 +623,9 @@
                 vol: 0.8,
                 isCollapsed: true,
                 wakeLock: false,
-                panelLanguages: {}
+                panelLanguages: {},
+                font: 'system-ui'
+
             };
             speechProfiles.forEach((profile, index) => {
                 defaults.panelLanguages[index] = languageElements[index].langSelect.value;
@@ -605,6 +641,8 @@
             themeSelect.value = s.theme;
             volInput.value = s.vol;
             wakeLockCheckbox.checked = s.wakeLock;
+            fontSelector.value = s.font;
+            applyClockFont(s.font);
 
             // 初期ロード時にテーマを適用
             applyTheme(s.theme);
@@ -915,7 +953,7 @@
             synth.cancel();
             synth.speak(new SpeechSynthesisUtterance(' '));
             startupOverlay.style.opacity = '0'; // fire css opacity transition
-            setTimeout(() => startupOverlay.style.display = 'none', 500);
+            setTimeout(() => startupOverlay.style.display = 'none', 1000);
             main();
         };
     </script>
