@@ -266,7 +266,7 @@
         }
 
         label {
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             color: var(--text-color);
@@ -284,6 +284,16 @@
             margin-top: -0.1rem;
         }
 
+        .range-value[data-state="low"] {
+            font-weight: normal;
+            font-style: italic;
+        }
+        .range-value[data-state="mid"] {
+            font-weight: normal;
+        }
+        .range-value[data-state="high"] {
+            font-weight: bold;
+        }
         select, textarea, input, .test-button {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
@@ -399,7 +409,7 @@
                     </div>
                     <div class="dual-grid">
                         <div class="control-group">
-                            <label>Theme</label>
+                            <label for="themeSelect">Theme</label>
                             <select id="themeSelect">
                                 <option value="default">Midnight</option>
                                 <option value="theme-cyberpunk">Cyber Matrix</option>
@@ -407,7 +417,7 @@
                             </select>
                         </div>
                         <div class="control-group">
-                            <label>Master Volume: <span id="volValue">80%</span></label>
+                            <label for="volInput">Master Volume: <span class="range-value" id="volValue">80%</span></label>
                             <input type="range" id="volInput" min="0" max="2" step="0.05" value="0.8">
                         </div>
                     </div>
@@ -444,11 +454,11 @@
                             <select id="voiceSelect0"></select>
                         </div>
                         <div class="control-group" style="margin-top:16px">
-                            <label for="rateInput0">Rate: <span id="rateValue0">1.0</span></label>
+                            <label for="rateInput0">Rate: <span class="range-value" id="rateValue0">1.0</span></label>
                             <input type="range" id="rateInput0" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
-                            <label>Volume: <span id="volValue0">100%</span></label>
+                            <label>Volume: <span class="range-value" id="volValue0">100%</span></label>
                             <input type="range" id="volInput0" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
                         <textarea id="template0" style="margin-top:8px" placeholder="Enter template..."></textarea>
@@ -466,11 +476,11 @@
                             <select id="voiceSelect1"></select>
                         </div>
                         <div class="control-group" style="margin-top:16px">
-                            <label for="rateInput1">Rate: <span id="rateValue1">1.0</span></label>
+                            <label for="rateInput1">Rate: <span class="range-value" id="rateValue1">1.0</span></label>
                             <input type="range" id="rateInput1" min="0.5" max="2.0" step="0.1" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
-                            <label>Volume: <span id="volValue1">100%</span></label>
+                            <label>Volume: <span class="range-value" id="volValue1">100%</span></label>
                             <input type="range" id="volInput1" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
                         <textarea id="template1" style="margin-top:8px" placeholder="Enter template..."></textarea>
@@ -615,7 +625,12 @@
             });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
-
+        function updateRangeText(textContentElem, textContent, midValue, valueStr) {
+            const value = parseFloat(valueStr);
+            const state = value < midValue ? "low" : (value === midValue ? "mid" : "high");
+            textContentElem.dataset.state = state;
+            textContentElem.textContent = textContent;
+        }
         function loadSettings() {
             const raw = localStorage.getItem(STORAGE_KEY);
             const defaults = {
@@ -647,7 +662,7 @@
             // 初期ロード時にテーマを適用
             applyTheme(s.theme);
             
-            volValue.textContent = `${Math.round(s.vol * 100)}%`;
+            updateRangeText(volValue, `${Math.round(s.vol * 100)}%`, 1, s.vol);
             speechProfiles.forEach((profile, index) => {
                 const elems = languageElements[index];
                 panelLanguages[index] = s.panelLanguages?.[index] || elems.langSelect.value;
@@ -659,8 +674,8 @@
                 elems.volInput.value = s[volKey];
                 elems.template.value = s[tKey];
                 elems.rateInput.value = s[rKey];
-                elems.rateValue.textContent = `${parseFloat(s[rKey]).toFixed(1)}`;
-                elems.volValue.textContent = `${Math.round(s[volKey] * 100)}%`;
+                updateRangeText(elems.volValue, `${Math.round(s[volKey] * 100)}%`, 1, s[volKey]);
+                updateRangeText(elems.rateValue, `${parseFloat(s[rKey]).toFixed(1)}`, 1, s[rKey]);
                 window[`_tmpV_${index}_${langKey}`] = s[vKey];
             });
 
@@ -903,8 +918,8 @@
             speechProfiles.forEach((profile, index) => {
                 const elems = languageElements[index];
                 elems.testBtn.onclick = (e) => { e.stopPropagation(); testSpeak(index); };
-                elems.volInput.oninput = (e) => elems.volValue.textContent = `${Math.round(e.target.value * 100)}%`;
-                elems.rateInput.oninput = (e) => elems.rateValue.textContent = `${parseFloat(e.target.value).toFixed(1)}`;
+                elems.volInput.oninput = (e) => updateRangeText(elems.volValue, `${Math.round(e.target.value * 100)}%`, 1, e.target.value);
+                elems.rateInput.oninput = (e) => updateRangeText(elems.rateValue, `${parseFloat(e.target.value).toFixed(1)}`, 1, e.target.value);
                 elems.langSelect.onchange = () => {
                     panelLanguages[index] = elems.langSelect.value;
                     updateVoiceSelect(index, elems.langSelect.value);
@@ -925,7 +940,7 @@
                 announce(d.getHours(), d.getMinutes(), d.getSeconds(), true);
             };
             
-            volInput.oninput = (e) => volValue.textContent = `${Math.round(e.target.value * 100)}%`;
+            volInput.oninput = (e) => updateRangeText(volValue, `${Math.round(e.target.value * 100)}%`, 1, e.target.value);
 
             document.querySelectorAll('input, select, textarea').forEach(el => {
                 // themeSelectは別途onchangeで処理しているので除外しても良いが、一括保存のため残す
