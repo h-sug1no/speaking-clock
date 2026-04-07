@@ -294,7 +294,7 @@
         .range-value[data-state="high"] {
             font-weight: bold;
         }
-        select, textarea, input, .test-button {
+        select, textarea, input, .sc-button {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--input-text);
@@ -311,21 +311,21 @@
             outline: var(--focus-outline);
         }
 
-        .test-button:hover {
+        .sc-button:hover {
             background: rgba(0, 122, 255, 0.15);
             transform: translateY(-1px);
         }
 
-        .test-button:active {
+        .sc-button:active {
             transform: translateY(0);
         }
 
-        .settings-panel.is-testing .test-button {
+        .settings-panel.is-testing .test-speak-button {
             background: var(--accent-color);
             color: #fff;
         }
 
-        .test-button {
+        .sc-button {
             margin-top: 8px;
             cursor: pointer;
         }
@@ -463,9 +463,9 @@
                         </div>
                         <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 8px;">
                             <textarea id="template0" style="flex: 1;" placeholder="Enter Speech template..."></textarea>
-                            <button id="resetTemplate0" title="Reset Speech Template" class="test-button" style="width: 40px; height: 40px; padding: 0; font-size: 16px; flex-shrink: 0;">🔄</button>
+                            <button id="resetTemplate0" title="Reset Speech Template" class="sc-button" style="width: 40px; height: 40px; padding: 0; font-size: 16px; flex-shrink: 0;">🔄</button>
                         </div>
-                        <button id="testSpeak0" class="test-button">Test Speak</button>
+                        <button id="testSpeak0" class="sc-button test-speak-button">Test Speak</button>
                     </div>
                     <div class="settings-panel" id="panel1">
                         <div class="dual-grid">
@@ -488,9 +488,9 @@
                         </div>
                         <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 8px;">
                             <textarea id="template1" style="flex: 1;" placeholder="Enter Speech template..."></textarea>
-                            <button id="resetTemplate1" title="Reset Speech Template" class="test-button" style="width: 40px; height: 40px; padding: 0; font-size: 16px; flex-shrink: 0;">🔄</button>
+                            <button id="resetTemplate1" title="Reset Speech Template" class="sc-button" style="width: 40px; height: 40px; padding: 0; font-size: 16px; flex-shrink: 0;">🔄</button>
                         </div>
-                        <button id="testSpeak1" class="test-button">Test Speak</button>
+                        <button id="testSpeak1" class="sc-button test-speak-button">Test Speak</button>
                     </div>
                 </div>
             </div>
