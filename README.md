@@ -1,40 +1,43 @@
 # Speaking Clock
-https://h-sug1no.github.io/speaking-clock/
+[https://h-sug1no.github.io/speaking-clock/](https://h-sug1no.github.io/speaking-clock/)
 
-Web時計アプリ。デフォルトで毎時特定の分[0, 7, 15, 22, 30, 37, 45, 52]・秒[0, 30]に英語→日本語で時刻を自動アナウンス。
+A web-based clock application. By default, it automatically announces the time in English followed by Japanese at specific intervals: every hour at minutes **[0, 7, 15, 22, 30, 37, 45, 52]** and seconds **[0, 30]**.
 
-- 朝、起きるまでの数十分位の間、うとうとしながら音楽を効く生活のために
-- いつ起きるか決めるために、時刻を読み上げてもらう
-  - これの原型を自作
-    - agentに実装してもらう実験のためにこのレポジトリを作成
-- アナウンス間隔は実運用で個人的に合っている値
-- ２つのアナウンスなのは、一回だと聞き逃す、三回以上だとくどい気がしたから
+### The Inspiration
+* **Morning Routine:** Designed for those final drifting minutes spent between sleep and wakefulness while listening to music.
+* **Time Awareness:** Provides periodic time announcements to help you decide exactly when to finally get out of bed.
+    * I originally built a prototype for personal use.
+    * This repository was created as an experiment to see how effectively an AI agent could implement the features.
+* **Intervals:** The default announcement intervals are values I found most effective through real-world personal use.
+* **Bilingual Delivery:** I chose two announcements because once is easy to miss, but three or more felt too repetitive.
 
-## 機能
+---
 
-- 言語選択可能なバイリンガル・アナウンス（デフォルト: 英語→日本語）
-- リアルタイムカスタマイズ：テンプレート、テーマ（Midnight/Cyber Matrix/Pure White）、音声設定
-- 画面オン維持機能（Wake Lock）
-- クイックテスト機能
+## Features
 
-## 使い方
+* **Bilingual Announcements:** Selectable languages (Default: English → Japanese).
+* **Real-time Customization:** Adjustable templates, themes (**Midnight** / **Cyber Matrix** / **Pure White**), and voice settings.
+* **Wake Lock:** Keeps the screen on during use.
+* **Quick Test:** Instantly preview the announcement settings.
 
-1. `index.html` をブラウザで開く
-2. 「Start Clock」をクリック
-3. 設定パネルでカスタマイズ
+## Usage
 
-## 読み上げテンプレート変数
+1.  Open `index.html` in your browser.
+2.  Click **"Start Clock"**.
+3.  Customize your experience via the **Settings Panel**.
 
-- `{h}`: 時
-- `{m}`: 分
-- `{s}`: 秒
-- `{lts}`: ロケールに応じた時刻テキスト
+## Speech Template Variables
 
-## ライセンス
+* `{h}`: Hour
+* `{m}`: Minute
+* `{s}`: Second
+* `{lts}`: Locale-specific time string
+
+## License
 
 MIT License
 
 ---
 
 *This project was enhanced by Gemini, an AI assistant from Google.*
-*This project was enhanced by GitHub Copilot *
+*This project was enhanced by GitHub Copilot.*
