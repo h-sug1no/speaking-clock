@@ -461,7 +461,10 @@
                             <label>Volume: <span class="range-value" id="volValue0">100%</span></label>
                             <input type="range" id="volInput0" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
-                        <textarea id="template0" style="margin-top:8px" placeholder="Enter template..."></textarea>
+                        <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 8px;">
+                            <textarea id="template0" style="flex: 1;" placeholder="Enter Speech template..."></textarea>
+                            <button id="resetTemplate0" title="Reset Speech Template" class="test-button" style="width: 40px; height: 40px; padding: 0; font-size: 16px; flex-shrink: 0;">🔄</button>
+                        </div>
                         <button id="testSpeak0" class="test-button">Test Speak</button>
                     </div>
                     <div class="settings-panel" id="panel1">
@@ -483,7 +486,10 @@
                             <label>Volume: <span class="range-value" id="volValue1">100%</span></label>
                             <input type="range" id="volInput1" min="0" max="1.5" step="0.05" value="1.0">
                         </div>
-                        <textarea id="template1" style="margin-top:8px" placeholder="Enter template..."></textarea>
+                        <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 8px;">
+                            <textarea id="template1" style="flex: 1;" placeholder="Enter Speech template..."></textarea>
+                            <button id="resetTemplate1" title="Reset Speech Template" class="test-button" style="width: 40px; height: 40px; padding: 0; font-size: 16px; flex-shrink: 0;">🔄</button>
+                        </div>
                         <button id="testSpeak1" class="test-button">Test Speak</button>
                     </div>
                 </div>
@@ -563,6 +569,15 @@
                 langSelect: document.querySelector(`select[data-panel="${index}"]`)
             };
             panelLanguages[index] = languageElements[index].langSelect.value;
+        });
+
+        // Reset template buttons
+        speechProfiles.forEach((profile, index) => {
+            const resetBtn = document.getElementById(`resetTemplate${index}`);
+            resetBtn.addEventListener('click', () => {
+                languageElements[index].template.value = profile.defaultTemplate;
+                saveSettings();
+            });
         });
 
         // --- Settings & State ---
