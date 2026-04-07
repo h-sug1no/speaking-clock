@@ -1,62 +1,43 @@
-# Speaking Clock (多言語音声読み上げ時計)
+# Speaking Clock
+[https://h-sug1no.github.io/speaking-clock/](https://h-sug1no.github.io/speaking-clock/)
 
-https://h-sug1no.github.io/speaking-clock/
+A web-based clock application. By default, it automatically announces the time in English followed by Japanese at specific intervals: every hour at minutes **[0, 7, 15, 22, 30, 37, 45, 52]** and seconds **[0, 30]**.
 
-「Speaking Clock」は、グラスモーフィズムを採用したモダンなデザインのWeb時計アプリです。
-デフォルトでは、毎時{0, 7, 15, 22, 30, 37, 45, 52}分の{0, 30}秒になると、現在時刻を「英語 → 日本語」の順で自動アナウンスします。作業中の時間管理や、リスニング環境の構築に最適です。
-
-## 主な機能
-
-- **バイリンガル・アナウンス**: 英語で時刻を伝えた後、シームレスに日本語で補足します。
-- **ライブ・カスタマイズ**:
-    - **テンプレート編集**: 読み上げ文言をリアルタイムに変更可能（例: `{h}時{m}分です`）。
-    - **デザインテーマ**: Midnight (Dark), Cyber Matrix (Green), Pure White (Light) の3種類を搭載。
-    - **音声設定**: 声の種類、速度、音量を自由に調整できます。
-- **モダンなUI/UX**:
-    - 背景の透過感（グラスモーフィズム）を活かしたスタイリッシュなデザイン。
-    - デスクトップ・モバイル双方に最適化されたレスポンシブ設計。
-- **クイックテスト**: 設定パネルの背景部分をクリックすれば、いつでも現在の設定で音声テストが可能です。
-
-## クイックスタート
-
-本アプリは単一のHTMLファイルで構成されているため、サーバー設定やインストールは不要です。
-
-1. `index.html` を任意のブラウザで開きます。
-2. 「Start Clock」ボタンをクリックしてアプリケーションを開始します。
-3. 画面右上の「Show Settings ⚙️」をクリックし、お好みのテーマやアナウンス文を設定します。
-
-## 開発者向けカスタマイズ
-
-### アナウンス間隔の調整
-
-`index.html` 内の`targetMinutes` と `targetSeconds` の配列を直接編集することで、読み上げのタイミングを自由に変更できます。
-
-```javascript
-// 例：毎時0分、15分、30分、45分の0秒に読み上げる場合
-const targetMinutes = [0, 15, 30, 45];
-const targetSeconds = [0];
-
-// 例：毎分0秒と30秒に読み上げる場合
-const targetMinutes = Array.from({length: 60}, (_, i) => i); // 0-59
-const targetSeconds = [0, 30];
-```
-
-## テンプレートで使用可能な変数
-
-テンプレート入力欄では以下の変数が使用できます。
-
-- `{h}`: 現在の「時」
-- `{m}`: 現在の「分」
-- `{s}`: 現在の「秒」
-
-## 動作環境
-
-- Google Chrome / Microsoft Edge / Safari (最新版推奨)
-- 各OSの標準音声エンジン（Web Speech API）を使用します。
-
-## ライセンス
-
-このプロジェクトは MIT ライセンス の下で公開されています。商用・個人利用を問わず自由にご利用いただけます。
+### The Inspiration
+* **Morning Routine:** Designed for those final drifting minutes spent between sleep and wakefulness while listening to music.
+* **Time Awareness:** Provides periodic time announcements to help you decide exactly when to finally get out of bed.
+    * I originally built a prototype for personal use.
+    * This repository was created as an experiment to see how effectively an AI agent could implement the features.
+* **Intervals:** The default announcement intervals are values I found most effective through real-world personal use.
+* **Bilingual Delivery:** I chose two announcements because once is easy to miss, but three or more felt too repetitive.
 
 ---
+
+## Features
+
+* **Bilingual Announcements:** Selectable languages (Default: English → Japanese).
+* **Real-time Customization:** Adjustable templates, themes (**Midnight** / **Cyber Matrix** / **Pure White**), and voice settings.
+* **Wake Lock:** Keeps the screen on during use.
+* **Quick Test:** Instantly preview the announcement settings.
+
+## Usage
+
+1.  Open `index.html` in your browser.
+2.  Click **"Start Clock"**.
+3.  Customize your experience via the **Settings Panel**.
+
+## Speech Template Variables
+
+* `{h}`: Hour
+* `{m}`: Minute
+* `{s}`: Second
+* `{lts}`: Locale-specific time string
+
+## License
+
+MIT License
+
+---
+
 *This project was enhanced by Gemini, an AI assistant from Google.*
+*This project was enhanced by GitHub Copilot.*
