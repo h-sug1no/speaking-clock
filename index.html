@@ -21,6 +21,10 @@
             --label-width: 84px;
             --focus-outline: 2px solid #4C9BFF;
             --section-gap: 16px;
+
+            --scale-x: 1;
+            --scale-y: 1;
+            --letter-spacing: 0;
         }
 
         /* サイバーマトリックス・テーマ */
@@ -189,7 +193,6 @@
             font-weight: 600;
             color: var(--text-color);
             opacity: 0.8;
-            letter-spacing: 0.05em;
             margin-bottom: 0px;
             pointer-events: none;
             transition: all 0.4s ease;
@@ -203,6 +206,12 @@
 
         #clockContent {
             font-variant-numeric: tabular-nums;
+            transform: scale(var(--scale-x), var(--scale-y));
+        }
+
+        #clockContent .clock-display, #clockContent .date-display {
+            letter-spacing: calc(var(--letter-spacing) * 1em);
+            transition: transform 0.1s ease-out, letter-spacing 0.1s ease-out;
         }
 
         .clock-display {
@@ -211,7 +220,6 @@
             text-align: center;
             margin: 0px 0 30px;
             font-variant-numeric: tabular-nums;
-            letter-spacing: -2px;
             color: var(--clock-color);
             text-shadow: 0 0 15px rgba(0,0,0,0.1);
             pointer-events: none;
@@ -439,9 +447,37 @@
                             <option value="math">math</option>
                             <option value="fangsong">fangsong</option>
                         </select>
-
                     </div>
+                    <div class="controls-area">
+                        <div class="controls-grid">
+                            <!-- Scale X -->
+                            <div class="control-group">
+                                <label for="inputScaleX">Scale X</label>
+                                <input type="number" id="inputScaleX" step="0.05" value="1.0">
+                                <p class="help-text">横方向の倍率</p>
+                            </div>
 
+                            <!-- Scale Y -->
+                            <div class="control-group">
+                                <label for="inputScaleY">Scale Y</label>
+                                <input type="number" id="inputScaleY" step="0.05" value="1.0">
+                                <p class="help-text">縦方向の倍率</p>
+                            </div>
+
+                            <!-- Letter Spacing -->
+                            <div class="control-group">
+                                <label for="inputLS">Spacing</label>
+                                <input type="number" id="inputLS" step="0.01" value="0">
+                                <p class="help-text">文字の間隔 (px)</p>
+                            </div>
+
+                        </div>
+
+                        <!-- Reset Button -->
+                        <div class="footer">
+                            <button id="resetBtn">値をリセット</button>
+                        </div>
+                    </div>
                     <div class="settings-panel" id="panel0">
                         <div class="dual-grid">
                             <div class="control-group">
@@ -986,6 +1022,39 @@
             setTimeout(() => startupOverlay.style.display = 'none', 1000);
             main();
         };
+
+        //////////////////////////////////////////
+
+        const inputScaleX = document.getElementById('inputScaleX');
+        const inputScaleY = document.getElementById('inputScaleY');
+        const inputLS = document.getElementById('inputLS');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function updateClockStyles() {
+            const x = inputScaleX.value || 1;
+            const y = inputScaleY.value || 1;
+            const ls = inputLS.value || 0;
+
+            document.documentElement.style.setProperty('--scale-x', x);
+            document.documentElement.style.setProperty('--scale-y', y);
+            document.documentElement.style.setProperty('--letter-spacing', ls);
+        }
+
+        // 入力イベントの設定
+        [inputScaleX, inputScaleY, inputLS].forEach(el => {
+            el.addEventListener('input', updateClockStyles);
+        });
+
+        // リセット機能
+        resetBtn.addEventListener('click', () => {
+            inputScaleX.value = 1.0;
+            inputScaleY.value = 1.0;
+            inputLS.value = 0;
+            updateClockStyles();
+        });
+
+        // 初期実行
+        updateClockStyles();
     </script>
 </body>
 </html>
