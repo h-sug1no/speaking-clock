@@ -21,6 +21,10 @@
             --label-width: 84px;
             --focus-outline: 2px solid #4C9BFF;
             --section-gap: 16px;
+
+            --scale-x: 1;
+            --scale-y: 1;
+            --letter-spacing: 0;
         }
 
         /* サイバーマトリックス・テーマ */
@@ -189,7 +193,6 @@
             font-weight: 600;
             color: var(--text-color);
             opacity: 0.8;
-            letter-spacing: 0.05em;
             margin-bottom: 0px;
             pointer-events: none;
             transition: all 0.4s ease;
@@ -203,6 +206,12 @@
 
         #clockContent {
             font-variant-numeric: tabular-nums;
+            transform: scale(var(--scale-x), var(--scale-y));
+        }
+
+        #clockContent .clock-display, #clockContent .date-display {
+            letter-spacing: calc(var(--letter-spacing) * 1em);
+            transition: transform 0.1s ease-out, letter-spacing 0.1s ease-out;
         }
 
         .clock-display {
@@ -211,7 +220,6 @@
             text-align: center;
             margin: 0px 0 30px;
             font-variant-numeric: tabular-nums;
-            letter-spacing: -2px;
             color: var(--clock-color);
             text-shadow: 0 0 15px rgba(0,0,0,0.1);
             pointer-events: none;
@@ -250,6 +258,11 @@
             margin-top: 10px;
         }
 
+        .clock-styles-controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
         .settings-panel {
             background: rgba(0,0,0,0.1);
             padding: 14px;
@@ -265,7 +278,17 @@
             box-shadow: 0 0 15px rgba(0, 122, 255, 0.2);
         }
 
-        label {
+        .clock-styles-controls-area {
+            margin-top: var(--section-gap);
+        }
+
+        .clock-styles-controls-area .footer {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        label, .panel-title {
             font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
@@ -307,7 +330,7 @@
             box-sizing: border-box;
         }
 
-        select:focus, textarea:focus, input:focus {
+        select:focus, textarea:focus, input:focus, .sc-button:focus {
             outline: var(--focus-outline);
         }
 
@@ -439,7 +462,32 @@
                             <option value="math">math</option>
                             <option value="fangsong">fangsong</option>
                         </select>
+                    </div>
+                    <div class="clock-styles-controls-area">
+                        <div class="panel-title">Clock Styles</div>
+                        <div class="clock-styles-controls-grid settings-panel">
+                            <!-- Scale X -->
+                            <div class="control-group">
+                                <label for="inputScaleX">Scale X</label>
+                                <input type="number" id="inputScaleX" step="0.05" value="1.0">
+                            </div>
 
+                            <!-- Scale Y -->
+                            <div class="control-group">
+                                <label for="inputScaleY">Scale Y</label>
+                                <input type="number" id="inputScaleY" step="0.05" value="1.0">
+                            </div>
+
+                            <!-- Letter Spacing -->
+                            <div class="control-group">
+                                <label for="inputLS">Letter Spacing</label>
+                                <input type="number" id="inputLS" step="0.01" value="0">
+                            </div>
+                            <!-- Reset Button -->
+                            <div class="footer">
+                                <button id="resetBtn" class="sc-button">Reset</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="settings-panel" id="panel0">
@@ -628,7 +676,10 @@
                 wakeLock: wakeLockCheckbox.checked,
                 isCollapsed: isCollapsed,
                 panelLanguages: panelLanguages,
-                font: fontSelector.value
+                font: fontSelector.value,
+                scaleX: inputScaleX.value,
+                scaleY: inputScaleY.value,
+                letterSpacing: inputLS.value
             };
             speechProfiles.forEach((profile, index) => {
                 const elems = languageElements[index];
@@ -654,8 +705,10 @@
                 isCollapsed: true,
                 wakeLock: false,
                 panelLanguages: {},
-                font: 'system-ui'
-
+                font: 'system-ui',
+                scaleX: 1.0,
+                scaleY: 1.0,
+                letterSpacing: 0
             };
             speechProfiles.forEach((profile, index) => {
                 defaults.panelLanguages[index] = languageElements[index].langSelect.value;
@@ -672,7 +725,12 @@
             volInput.value = s.vol;
             wakeLockCheckbox.checked = s.wakeLock;
             fontSelector.value = s.font;
+            inputScaleX.value = s.scaleX;
+            inputScaleY.value = s.scaleY;
+            inputLS.value = s.letterSpacing;
+
             applyClockFont(s.font);
+            updateClockStyles();
 
             // 初期ロード時にテーマを適用
             applyTheme(s.theme);
@@ -986,6 +1044,40 @@
             setTimeout(() => startupOverlay.style.display = 'none', 1000);
             main();
         };
+
+        //////////////////////////////////////////
+
+        const inputScaleX = document.getElementById('inputScaleX');
+        const inputScaleY = document.getElementById('inputScaleY');
+        const inputLS = document.getElementById('inputLS');
+        const resetBtn = document.getElementById('resetBtn');
+
+        function updateClockStyles() {
+            const x = inputScaleX.value || 1;
+            const y = inputScaleY.value || 1;
+            const ls = inputLS.value || 0;
+
+            const docStyle = document.documentElement.style;
+            docStyle.setProperty('--scale-x', x);
+            docStyle.setProperty('--scale-y', y);
+            docStyle.setProperty('--letter-spacing', ls);
+        }
+
+        // 入力イベントの設定
+        [inputScaleX, inputScaleY, inputLS].forEach(el => {
+            el.addEventListener('input', updateClockStyles);
+        });
+
+        // リセット機能
+        resetBtn.addEventListener('click', () => {
+            inputScaleX.value = 1.0;
+            inputScaleY.value = 1.0;
+            inputLS.value = 0;
+            updateClockStyles();
+        });
+
+        // 初期実行
+        updateClockStyles();
     </script>
 </body>
 </html>
