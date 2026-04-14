@@ -258,6 +258,11 @@
             margin-top: 10px;
         }
 
+        .clock-styles-controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
         .settings-panel {
             background: rgba(0,0,0,0.1);
             padding: 14px;
@@ -273,7 +278,17 @@
             box-shadow: 0 0 15px rgba(0, 122, 255, 0.2);
         }
 
-        label {
+        .clock-styles-controls-area {
+            margin-top: var(--section-gap);
+        }
+
+        .clock-styles-controls-area .footer {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        label, .panel-title {
             font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
@@ -315,7 +330,7 @@
             box-sizing: border-box;
         }
 
-        select:focus, textarea:focus, input:focus {
+        select:focus, textarea:focus, input:focus, .sc-button:focus {
             outline: var(--focus-outline);
         }
 
@@ -448,36 +463,33 @@
                             <option value="fangsong">fangsong</option>
                         </select>
                     </div>
-                    <div class="controls-area">
-                        <div class="controls-grid">
+                    <div class="clock-styles-controls-area">
+                        <div class="panel-title">Clock Styles</div>
+                        <div class="clock-styles-controls-grid settings-panel">
                             <!-- Scale X -->
                             <div class="control-group">
                                 <label for="inputScaleX">Scale X</label>
                                 <input type="number" id="inputScaleX" step="0.05" value="1.0">
-                                <p class="help-text">横方向の倍率</p>
                             </div>
 
                             <!-- Scale Y -->
                             <div class="control-group">
                                 <label for="inputScaleY">Scale Y</label>
                                 <input type="number" id="inputScaleY" step="0.05" value="1.0">
-                                <p class="help-text">縦方向の倍率</p>
                             </div>
 
                             <!-- Letter Spacing -->
                             <div class="control-group">
-                                <label for="inputLS">Spacing</label>
+                                <label for="inputLS">Letter Spacing</label>
                                 <input type="number" id="inputLS" step="0.01" value="0">
-                                <p class="help-text">文字の間隔 (px)</p>
                             </div>
-
-                        </div>
-
-                        <!-- Reset Button -->
-                        <div class="footer">
-                            <button id="resetBtn">値をリセット</button>
+                            <!-- Reset Button -->
+                            <div class="footer">
+                                <button id="resetBtn" class="sc-button">Reset</button>
+                            </div>
                         </div>
                     </div>
+
                     <div class="settings-panel" id="panel0">
                         <div class="dual-grid">
                             <div class="control-group">
@@ -664,7 +676,10 @@
                 wakeLock: wakeLockCheckbox.checked,
                 isCollapsed: isCollapsed,
                 panelLanguages: panelLanguages,
-                font: fontSelector.value
+                font: fontSelector.value,
+                scaleX: inputScaleX.value,
+                scaleY: inputScaleY.value,
+                letterSpacing: inputLS.value
             };
             speechProfiles.forEach((profile, index) => {
                 const elems = languageElements[index];
@@ -690,8 +705,10 @@
                 isCollapsed: true,
                 wakeLock: false,
                 panelLanguages: {},
-                font: 'system-ui'
-
+                font: 'system-ui',
+                scaleX: 1.0,
+                scaleY: 1.0,
+                letterSpacing: 0
             };
             speechProfiles.forEach((profile, index) => {
                 defaults.panelLanguages[index] = languageElements[index].langSelect.value;
@@ -708,7 +725,12 @@
             volInput.value = s.vol;
             wakeLockCheckbox.checked = s.wakeLock;
             fontSelector.value = s.font;
+            inputScaleX.value = s.scaleX;
+            inputScaleY.value = s.scaleY;
+            inputLS.value = s.letterSpacing;
+
             applyClockFont(s.font);
+            updateClockStyles();
 
             // 初期ロード時にテーマを適用
             applyTheme(s.theme);
@@ -1035,9 +1057,10 @@
             const y = inputScaleY.value || 1;
             const ls = inputLS.value || 0;
 
-            document.documentElement.style.setProperty('--scale-x', x);
-            document.documentElement.style.setProperty('--scale-y', y);
-            document.documentElement.style.setProperty('--letter-spacing', ls);
+            const docStyle = document.documentElement.style;
+            docStyle.setProperty('--scale-x', x);
+            docStyle.setProperty('--scale-y', y);
+            docStyle.setProperty('--letter-spacing', ls);
         }
 
         // 入力イベントの設定
