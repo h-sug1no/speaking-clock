@@ -230,7 +230,6 @@
             font-size: clamp(60px, 20vw, 140px);
             margin: 15px 0 15px;
             font-weight: 400;
-            letter-spacing: -4px;
         }
 
         #settingsBody {
@@ -370,7 +369,7 @@
             background: transparent;
             border: none;
             cursor: pointer;
-            z-index: 0;
+            z-index: 1;
             outline: none;
         }
 
@@ -441,7 +440,7 @@
                         </div>
                         <div class="control-group">
                             <label for="volInput">Master Volume: <span class="range-value" id="volValue">80%</span></label>
-                            <input type="range" id="volInput" min="0" max="2" step="0.05" value="0.8">
+                            <input type="range" id="volInput" min="0" max="2" step="0.01" value="0.8">
                         </div>
                     </div>
                     <div id="fontSelectGroup" class="control-group">
@@ -503,11 +502,11 @@
                         </div>
                         <div class="control-group" style="margin-top:16px">
                             <label for="rateInput0">Rate: <span class="range-value" id="rateValue0">1.0</span></label>
-                            <input type="range" id="rateInput0" min="0.5" max="2.0" step="0.1" value="1.0">
+                            <input type="range" id="rateInput0" min="0.5" max="2.0" step="0.01" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
                             <label>Volume: <span class="range-value" id="volValue0">100%</span></label>
-                            <input type="range" id="volInput0" min="0" max="1.5" step="0.05" value="1.0">
+                            <input type="range" id="volInput0" min="0" max="1.5" step="0.01" value="1.0">
                         </div>
                         <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 8px;">
                             <textarea id="template0" style="flex: 1;" placeholder="Enter Speech template..."></textarea>
@@ -528,11 +527,11 @@
                         </div>
                         <div class="control-group" style="margin-top:16px">
                             <label for="rateInput1">Rate: <span class="range-value" id="rateValue1">1.0</span></label>
-                            <input type="range" id="rateInput1" min="0.5" max="2.0" step="0.1" value="1.0">
+                            <input type="range" id="rateInput1" min="0.5" max="2.0" step="0.01" value="1.0">
                         </div>
                         <div class="control-group" style="margin-top:8px">
                             <label>Volume: <span class="range-value" id="volValue1">100%</span></label>
-                            <input type="range" id="volInput1" min="0" max="1.5" step="0.05" value="1.0">
+                            <input type="range" id="volInput1" min="0" max="1.5" step="0.01" value="1.0">
                         </div>
                         <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 8px;">
                             <textarea id="template1" style="flex: 1;" placeholder="Enter Speech template..."></textarea>
@@ -748,7 +747,7 @@
                 elems.template.value = s[tKey];
                 elems.rateInput.value = s[rKey];
                 updateRangeText(elems.volValue, `${Math.round(s[volKey] * 100)}%`, 1, s[volKey]);
-                updateRangeText(elems.rateValue, `${parseFloat(s[rKey]).toFixed(1)}`, 1, s[rKey]);
+                updateRangeText(elems.rateValue, `${parseFloat(s[rKey]).toFixed(2)}`, 1, s[rKey]);
                 window[`_tmpV_${index}_${langKey}`] = s[vKey];
             });
 
@@ -992,7 +991,7 @@
                 const elems = languageElements[index];
                 elems.testBtn.onclick = (e) => { e.stopPropagation(); testSpeak(index); };
                 elems.volInput.oninput = (e) => updateRangeText(elems.volValue, `${Math.round(e.target.value * 100)}%`, 1, e.target.value);
-                elems.rateInput.oninput = (e) => updateRangeText(elems.rateValue, `${parseFloat(e.target.value).toFixed(1)}`, 1, e.target.value);
+                elems.rateInput.oninput = (e) => updateRangeText(elems.rateValue, `${parseFloat(e.target.value).toFixed(2)}`, 1, e.target.value);
                 elems.langSelect.onchange = () => {
                     panelLanguages[index] = elems.langSelect.value;
                     updateVoiceSelect(index, elems.langSelect.value);
