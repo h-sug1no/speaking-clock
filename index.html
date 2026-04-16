@@ -628,15 +628,23 @@
                 langSelect: document.querySelector(`select[data-panel="${index}"]`)
             };
             panelLanguages[index] = languageElements[index].langSelect.value;
-        });
 
-        // Reset template buttons
-        speechProfiles.forEach((profile, index) => {
+            // Reset template buttons
             const resetBtn = document.getElementById(`resetTemplate${index}`);
             resetBtn.addEventListener('click', () => {
                 languageElements[index].template.value = profile.defaultTemplate;
                 saveSettings();
             });
+
+            const panel = languageElements[index].panel;
+            const testBtn = languageElements[index].testBtn;
+            panel.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    e.preventDefault();
+                    testBtn.click();
+                }
+            });
+            panel.title = "Press Ctrl + Enter to test speak";
         });
 
         // --- Settings & State ---
