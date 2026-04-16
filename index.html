@@ -604,6 +604,14 @@
         const fontSelector = document.getElementById('fontSelector');
         const clockContent = document.getElementById('clockContent');
 
+        volInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                ambientTestTrigger.click();
+            }
+        });
+        volInput.title = "Press Ctrl + Enter to test speak";
+
         const applyClockFont = (font) => {
             clockContent.style.fontFamily = font;
         };
