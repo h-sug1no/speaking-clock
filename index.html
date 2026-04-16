@@ -504,6 +504,10 @@
                             <label for="rateInput0">Rate: <span class="range-value" id="rateValue0">1.0</span></label>
                             <input type="range" id="rateInput0" min="0.5" max="2.0" step="0.01" value="1.0">
                         </div>
+                        <div class="control-group" style="margin-top:16px">
+                            <label for="pitchInput0">Pitch: <span class="pitch-value" id="pitchValue0">1.0</span></label>
+                            <input type="range" id="pitchInput0" min="0" max="2.0" step="0.01" value="1.0">
+                        </div>
                         <div class="control-group" style="margin-top:8px">
                             <label>Volume: <span class="range-value" id="volValue0">100%</span></label>
                             <input type="range" id="volInput0" min="0" max="1.5" step="0.01" value="1.0">
@@ -529,6 +533,10 @@
                             <label for="rateInput1">Rate: <span class="range-value" id="rateValue1">1.0</span></label>
                             <input type="range" id="rateInput1" min="0.5" max="2.0" step="0.01" value="1.0">
                         </div>
+                        <div class="control-group" style="margin-top:16px">
+                            <label for="pitchInput1">Pitch: <span class="pitch-value" id="pitchValue1">1.0</span></label>
+                            <input type="range" id="pitchInput1" min="0" max="2.0" step="0.01" value="1.0">
+                        </div>
                         <div class="control-group" style="margin-top:8px">
                             <label>Volume: <span class="range-value" id="volValue1">100%</span></label>
                             <input type="range" id="volInput1" min="0" max="1.5" step="0.01" value="1.0">
@@ -551,6 +559,7 @@
                 panelId: 'panel0',
                 voiceSelectId: 'voiceSelect0',
                 rateInputId: 'rateInput0',
+                pitchInputId: 'pitchInput0',
                 volInputId: 'volInput0',
                 volValueId: 'volValue0',
                 templateId: 'template0',
@@ -562,6 +571,7 @@
                 panelId: 'panel1',
                 voiceSelectId: 'voiceSelect1',
                 rateInputId: 'rateInput1',
+                pitchInputId: 'pitchInput1',
                 volInputId: 'volInput1',
                 volValueId: 'volValue1',
                 templateId: 'template1',
@@ -594,6 +604,14 @@
         const fontSelector = document.getElementById('fontSelector');
         const clockContent = document.getElementById('clockContent');
 
+        volInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                e.preventDefault();
+                ambientTestTrigger.click();
+            }
+        });
+        volInput.title = "Press Ctrl + Enter to test speak";
+
         const applyClockFont = (font) => {
             clockContent.style.fontFamily = font;
         };
@@ -609,6 +627,8 @@
                 voiceSelect: document.getElementById(profile.voiceSelectId),
                 rateInput: document.getElementById(profile.rateInputId),
                 rateValue: document.getElementById(`rateValue${index}`),
+                pitchInput: document.getElementById(profile.pitchInputId),
+                pitchValue: document.getElementById(`pitchValue${index}`),
                 volInput: document.getElementById(profile.volInputId),
                 volValue: document.getElementById(profile.volValueId),
                 template: document.getElementById(profile.templateId),
@@ -616,15 +636,23 @@
                 langSelect: document.querySelector(`select[data-panel="${index}"]`)
             };
             panelLanguages[index] = languageElements[index].langSelect.value;
-        });
 
-        // Reset template buttons
-        speechProfiles.forEach((profile, index) => {
+            // Reset template buttons
             const resetBtn = document.getElementById(`resetTemplate${index}`);
             resetBtn.addEventListener('click', () => {
                 languageElements[index].template.value = profile.defaultTemplate;
                 saveSettings();
             });
+
+            const panel = languageElements[index].panel;
+            const testBtn = languageElements[index].testBtn;
+            panel.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    e.preventDefault();
+                    testBtn.click();
+                }
+            });
+            panel.title = "Press Ctrl + Enter to test speak";
         });
 
         // --- Settings & State ---
@@ -687,6 +715,7 @@
                 data[`v_${index}_${langKey}`] = elems.voiceSelect.value;
                 data[`t_${index}_${langKey}`] = elems.template.value;
                 data[`r_${index}_${langKey}`] = elems.rateInput.value;
+                data[`p_${index}_${langKey}`] = elems.pitchInput.value;
             });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
@@ -716,6 +745,7 @@
                 defaults[`vol_${index}_${langKey}`] = 1.0;
                 defaults[`t_${index}_${langKey}`] = profile.defaultTemplate;
                 defaults[`r_${index}_${langKey}`] = 1.0;
+                defaults[`p_${index}_${langKey}`] = 1.0;
             });
             const loaded = raw ? JSON.parse(raw) : {};
             const s = { ...defaults, ...loaded };
@@ -743,11 +773,14 @@
                 const tKey = `t_${index}_${langKey}`;
                 const rKey = `r_${index}_${langKey}`;
                 const vKey = `v_${index}_${langKey}`;
+                const pKey = `p_${index}_${langKey}`;
                 elems.volInput.value = s[volKey];
                 elems.template.value = s[tKey];
                 elems.rateInput.value = s[rKey];
+                elems.pitchInput.value = s[pKey];
                 updateRangeText(elems.volValue, `${Math.round(s[volKey] * 100)}%`, 1, s[volKey]);
                 updateRangeText(elems.rateValue, `${parseFloat(s[rKey]).toFixed(2)}`, 1, s[rKey]);
+                updateRangeText(elems.pitchValue, `${parseFloat(s[pKey]).toFixed(2)}`, 1, s[pKey]);
                 window[`_tmpV_${index}_${langKey}`] = s[vKey];
             });
 
@@ -890,6 +923,7 @@
             const utterance = new SpeechSynthesisUtterance(processTemplate(elems.template.value, lang, tmpArgs));
             utterance.voice = voiceMapByVoiceURI[elems.voiceSelect.value];
             utterance.rate = parseFloat(elems.rateInput.value);
+            utterance.pitch = parseFloat(elems.pitchInput.value);
             utterance.volume = masterVol * vol;
             const targetPanel = elems.panel;
 
@@ -928,6 +962,7 @@
                 const u = new SpeechSynthesisUtterance(processTemplate(elems.template.value, lang, tmpArgs));
                 u.voice = voiceMapByVoiceURI[elems.voiceSelect.value];
                 u.rate = parseFloat(elems.rateInput.value);
+                u.pitch = parseFloat(elems.pitchInput.value);
                 u.volume = masterVol * vol;
                 return u;
             });
@@ -992,6 +1027,7 @@
                 elems.testBtn.onclick = (e) => { e.stopPropagation(); testSpeak(index); };
                 elems.volInput.oninput = (e) => updateRangeText(elems.volValue, `${Math.round(e.target.value * 100)}%`, 1, e.target.value);
                 elems.rateInput.oninput = (e) => updateRangeText(elems.rateValue, `${parseFloat(e.target.value).toFixed(2)}`, 1, e.target.value);
+                elems.pitchInput.oninput = (e) => updateRangeText(elems.pitchValue, `${parseFloat(e.target.value).toFixed(2)}`, 1, e.target.value);
                 elems.langSelect.onchange = () => {
                     panelLanguages[index] = elems.langSelect.value;
                     updateVoiceSelect(index, elems.langSelect.value);
