@@ -553,6 +553,37 @@
     </div>
 
     <script>
+        const toast = {
+            timeout: null,
+            show(message, duration = 5 * 1000) {
+                clearTimeout(this.timeout);
+                let el = document.createElement('div');
+                el.textContent = message;
+                const style = el.style;
+                style.position = 'fixed';
+                style.bottom = '20px';
+                style.left = '50%';
+                style.transform = 'translateX(-50%)';
+                style.background = 'var(--bg-color)';
+                style.color = 'var(--error-color)';
+                style.padding = '10px 20px';
+                style.borderRadius = '8px';
+
+                style.border = '1px solid rgba(255,255,255,0.12)';
+                style.boxShadow = '0 30px 60px rgba(0, 0, 0, 0.4)';
+
+                style.zIndex = 10000;
+                style.fontSize = '14px';
+                document.body.appendChild(el);
+                this.timeout = setTimeout(() => {
+                    el.remove();
+                }, duration);
+            }
+        };
+        const toastSpeachError = (ev) => {
+            console.error('Speech synthesis error occurred.', ev, this);
+            toast.show(`Speech synthesis error occurred. ${ev.error || ''}: ${ev.utterance.voice ? ev.utterance.voice.name : 'unknown voice'}`);
+        };
         // --- Speech Profiles Configuration (BCP 47 format) ---
         const speechProfiles = [
             {
@@ -937,8 +968,12 @@
                 statusBadge.textContent = "Active";
                 statusBadge.classList.remove('speaking');
             };
+            const onError = (ev) => {
+                toastSpeachError(ev);
+                onEnd();
+            };
             utterance.onend = onEnd;
-            utterance.onerror = onEnd;
+            utterance.onerror = onError;
             synth.speak(utterance);
         }
 
@@ -972,8 +1007,12 @@
                 statusBadge.textContent = "Active";
                 statusBadge.classList.remove('speaking');
             };
+            const onError = (ev) => {
+                toastSpeachError(ev);
+                onEnd();
+            };
             utterances.forEach((u, index) => {
-                u.onerror = onEnd;
+                u.onerror = onError;
                 if (index === utterances.length - 1) {
                     u.onend = onEnd;
                 } else {
