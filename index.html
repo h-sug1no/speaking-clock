@@ -183,7 +183,7 @@
             gap: 8px;
             cursor: pointer;
             transition: background 0.2s, transform 0.1s;
-            font-size: 13px;
+            font-size: 20px;
             font-weight: bold;
         }
 
@@ -207,6 +207,7 @@
         #clockContent {
             font-variant-numeric: tabular-nums;
             transform: scale(var(--scale-x), var(--scale-y));
+            position: relative;
         }
 
         #clockContent .clock-display, #clockContent .date-display {
@@ -395,9 +396,8 @@
             to { transform: scale(4); opacity: 0; }
         }
 
-        @media (max-width: 480px) {
-            .timer-card { padding: 20px; }
-            .dual-grid { grid-template-columns: 1fr; }
+        .timer-card.announcements-muted #clockContent {
+            opacity: 0.6;
         }
     </style>
 </head>
@@ -645,6 +645,7 @@
             toggleAnnounceBtn.textContent = announceEnabled ? '🔊' : '🔇';
             toggleAnnounceBtn.title = announceEnabled ? 'Click to mute announcements' : 'Click to enable announcements';
             toggleAnnounceBtn.classList.toggle('muted', !announceEnabled);
+            timerCard.classList.toggle('announcements-muted', !announceEnabled);
         };
 
         const setAnnouncementsEnabled = (enabled) => {
