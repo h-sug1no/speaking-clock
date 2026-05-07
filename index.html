@@ -156,7 +156,7 @@
             background: rgba(0, 122, 255, 0.1);
             color: var(--accent-color);
             border-radius: 8px;
-            font-size: 10px;
+            font-size: 13px;
             font-weight: 800;
             text-transform: uppercase;
             transition: all 0.3s ease;
@@ -187,6 +187,13 @@
             font-weight: bold;
         }
 
+        #toggleAnnounceBtn {
+            font-size: 22px;
+            padding: 10px 14px;
+            min-width: 54px;
+            justify-content: center;
+        }
+
         .date-display {
             text-align: center;
             font-size: 24px;
@@ -207,6 +214,7 @@
         #clockContent {
             font-variant-numeric: tabular-nums;
             transform: scale(var(--scale-x), var(--scale-y));
+            position: relative;
         }
 
         #clockContent .clock-display, #clockContent .date-display {
@@ -395,9 +403,8 @@
             to { transform: scale(4); opacity: 0; }
         }
 
-        @media (max-width: 480px) {
-            .timer-card { padding: 20px; }
-            .dual-grid { grid-template-columns: 1fr; }
+        .timer-card.announcements-muted #clockContent {
+            opacity: 0.6;
         }
     </style>
 </head>
@@ -412,9 +419,13 @@
             <button id="ambientTestTrigger" title="Click to test playback"></button>
             <div class="card-header">
                 <div class="status-badge" id="statusBadge">Active</div>
-                <button class="settings-toggle" id="toggleSettings">
-                    <span id="toggleText">Show Settings</span> ⚙️
-                </button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button class="settings-toggle" id="toggleSettings">
+                        <span id="toggleText">Show Settings</span> ⚙️
+                    </button>
+                    <button class="settings-toggle" id="toggleAnnounceBtn" type="button">🔊</button>
+
+                </div>
             </div>
             <div id="clockContent">
                 <div class="date-display" id="dateDisplay">----.--.-- (---)</div>
@@ -634,6 +645,28 @@
         const wakeLockStatus = document.getElementById('wakeLockStatus');
         const fontSelector = document.getElementById('fontSelector');
         const clockContent = document.getElementById('clockContent');
+        const toggleAnnounceBtn = document.getElementById('toggleAnnounceBtn');
+
+        let announceEnabled = true;
+
+        const updateAnnounceButton = () => {
+            toggleAnnounceBtn.textContent = announceEnabled ? '🔊' : '🔇';
+            toggleAnnounceBtn.title = announceEnabled ? 'Click to mute announcements' : 'Click to enable announcements';
+            toggleAnnounceBtn.classList.toggle('muted', !announceEnabled);
+            timerCard.classList.toggle('announcements-muted', !announceEnabled);
+        };
+
+        const setAnnouncementsEnabled = (enabled) => {
+            announceEnabled = enabled;
+            updateAnnounceButton();
+        };
+
+        const toggleAnnouncements = () => {
+            setAnnouncementsEnabled(!announceEnabled);
+            if (announceEnabled) {
+                primeSpeech();
+            }
+        };
 
         volInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
@@ -791,6 +824,7 @@
 
             applyClockFont(s.font);
             updateClockStyles();
+            updateAnnounceButton();
 
             // 初期ロード時にテーマを適用
             applyTheme(s.theme);
@@ -1033,7 +1067,7 @@
                 lastTime = {h, m, s};
                 dateDisplay.textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
                 clockDisplay.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-                if (targetMinutes.includes(m) && targetSeconds.includes(s)) announce(h, m, s);
+                if (targetMinutes.includes(m) && targetSeconds.includes(s) && announceEnabled) announce(h, m, s);
             }
             
             requestAnimationFrame(tick);
@@ -1098,6 +1132,11 @@
                 }
             });
             
+            toggleAnnounceBtn.onclick = (e) => {
+                e.stopPropagation();
+                toggleAnnouncements();
+            };
+            
             toggleSettingsBtn.onclick = (e) => {
                 e.stopPropagation();
                 settingsBody.classList.toggle('collapsed');
@@ -1111,9 +1150,13 @@
             requestAnimationFrame(tick);
         }
 
-        startupButton.onclick = () => {
+        const primeSpeech = () => {
             synth.cancel();
             synth.speak(new SpeechSynthesisUtterance(' '));
+        };
+
+        startupButton.onclick = () => {
+            primeSpeech();
             startupOverlay.style.opacity = '0'; // fire css opacity transition
             setTimeout(() => startupOverlay.style.display = 'none', 1000);
             main();
