@@ -643,6 +643,7 @@
 
         const updateAnnounceButton = () => {
             toggleAnnounceBtn.textContent = announceEnabled ? '🔊' : '🔇';
+            toggleAnnounceBtn.title = announceEnabled ? 'Click to mute announcements' : 'Click to enable announcements';
             toggleAnnounceBtn.classList.toggle('muted', !announceEnabled);
         };
 
