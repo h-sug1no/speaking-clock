@@ -412,9 +412,12 @@
             <button id="ambientTestTrigger" title="Click to test playback"></button>
             <div class="card-header">
                 <div class="status-badge" id="statusBadge">Active</div>
-                <button class="settings-toggle" id="toggleSettings">
-                    <span id="toggleText">Show Settings</span> ⚙️
-                </button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button class="settings-toggle" id="toggleAnnounceBtn" type="button">Announcements: On</button>
+                    <button class="settings-toggle" id="toggleSettings">
+                        <span id="toggleText">Show Settings</span> ⚙️
+                    </button>
+                </div>
             </div>
             <div id="clockContent">
                 <div class="date-display" id="dateDisplay">----.--.-- (---)</div>
@@ -634,6 +637,22 @@
         const wakeLockStatus = document.getElementById('wakeLockStatus');
         const fontSelector = document.getElementById('fontSelector');
         const clockContent = document.getElementById('clockContent');
+        const toggleAnnounceBtn = document.getElementById('toggleAnnounceBtn');
+
+        let announceEnabled = true;
+
+        const updateAnnounceButton = () => {
+            toggleAnnounceBtn.textContent = announceEnabled ? 'Announcements: On' : 'Announcements: Off';
+            toggleAnnounceBtn.classList.toggle('muted', !announceEnabled);
+        };
+
+        const setAnnouncementsEnabled = (enabled) => {
+            announceEnabled = enabled;
+            updateAnnounceButton();
+        };
+
+        const toggleAnnouncements = () => setAnnouncementsEnabled(!announceEnabled);
+
 
         volInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
@@ -791,6 +810,7 @@
 
             applyClockFont(s.font);
             updateClockStyles();
+            updateAnnounceButton();
 
             // 初期ロード時にテーマを適用
             applyTheme(s.theme);
@@ -1033,7 +1053,7 @@
                 lastTime = {h, m, s};
                 dateDisplay.textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} (${weekdays[now.getDay()]})`;
                 clockDisplay.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-                if (targetMinutes.includes(m) && targetSeconds.includes(s)) announce(h, m, s);
+                if (targetMinutes.includes(m) && targetSeconds.includes(s) && announceEnabled) announce(h, m, s);
             }
             
             requestAnimationFrame(tick);
@@ -1097,6 +1117,11 @@
                     el.title = "{h} = hours, {m} = minutes, {s} = seconds, {lts} = locale time string";
                 }
             });
+            
+            toggleAnnounceBtn.onclick = (e) => {
+                e.stopPropagation();
+                toggleAnnouncements();
+            };
             
             toggleSettingsBtn.onclick = (e) => {
                 e.stopPropagation();
