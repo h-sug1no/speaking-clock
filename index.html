@@ -661,8 +661,12 @@
             updateAnnounceButton();
         };
 
-        const toggleAnnouncements = () => setAnnouncementsEnabled(!announceEnabled);
-
+        const toggleAnnouncements = () => {
+            setAnnouncementsEnabled(!announceEnabled);
+            if (announceEnabled) {
+                primeSpeech();
+            }
+        };
 
         volInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
@@ -1146,9 +1150,13 @@
             requestAnimationFrame(tick);
         }
 
-        startupButton.onclick = () => {
+        const primeSpeech = () => {
             synth.cancel();
             synth.speak(new SpeechSynthesisUtterance(' '));
+        };
+
+        startupButton.onclick = () => {
+            primeSpeech();
             startupOverlay.style.opacity = '0'; // fire css opacity transition
             setTimeout(() => startupOverlay.style.display = 'none', 1000);
             main();
