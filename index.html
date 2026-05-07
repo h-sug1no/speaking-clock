@@ -413,7 +413,7 @@
             <div class="card-header">
                 <div class="status-badge" id="statusBadge">Active</div>
                 <div style="display:flex; gap:8px; align-items:center;">
-                    <button class="settings-toggle" id="toggleAnnounceBtn" type="button">Announcements: On</button>
+                    <button class="settings-toggle" id="toggleAnnounceBtn" type="button">🔊</button>
                     <button class="settings-toggle" id="toggleSettings">
                         <span id="toggleText">Show Settings</span> ⚙️
                     </button>
@@ -642,7 +642,7 @@
         let announceEnabled = true;
 
         const updateAnnounceButton = () => {
-            toggleAnnounceBtn.textContent = announceEnabled ? 'Announcements: On' : 'Announcements: Off';
+            toggleAnnounceBtn.textContent = announceEnabled ? '🔊' : '🔇';
             toggleAnnounceBtn.classList.toggle('muted', !announceEnabled);
         };
 
