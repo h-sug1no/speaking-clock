@@ -409,6 +409,10 @@
         .timer-card.announcements-muted #clockContent .date-display {
             opacity: 0.1;
         }
+
+        .timer-card.announcements-muted .status-badge .text {
+            opacity: 0;
+        }
     </style>
 </head>
 <body id="rootBody">
@@ -421,7 +425,7 @@
         <div class="timer-card" id="timerCard">
             <button id="ambientTestTrigger" title="Click to test playback"></button>
             <div class="card-header">
-                <div class="status-badge" id="statusBadge">Active</div>
+                <div class="status-badge" id="statusBadge"><span class="text">Active</span></div>
                 <div style="display:flex; gap:8px; align-items:center;">
                     <button class="settings-toggle" id="toggleSettings">
                         <span id="toggleText">Show Settings</span> ⚙️
@@ -635,6 +639,7 @@
         const rootBody = document.getElementById('rootBody');
         const timerCard = document.getElementById('timerCard');
         const statusBadge = document.getElementById('statusBadge');
+        const statusBadgeText = statusBadge.querySelector('.text');
         const toggleSettingsBtn = document.getElementById('toggleSettings');
         const toggleText = document.getElementById('toggleText');
         const dateDisplay = document.getElementById('dateDisplay');
@@ -997,12 +1002,12 @@
 
             utterance.onstart = () => {
                 targetPanel.classList.add('is-testing');
-                statusBadge.textContent = "Testing...";
+                statusBadgeText.textContent = "Testing...";
                 statusBadge.classList.add('speaking');
             };
             const onEnd = () => {
                 targetPanel.classList.remove('is-testing');
-                statusBadge.textContent = "Active";
+                statusBadgeText.textContent = "Active";
                 statusBadge.classList.remove('speaking');
             };
             const onError = (ev) => {
@@ -1023,7 +1028,7 @@
             const masterVol = parseFloat(volInput.value);
 
             timerCard.classList.add('is-speaking');
-            statusBadge.textContent = "Speaking...";
+            statusBadgeText.textContent = "Speaking...";
             statusBadge.classList.add('speaking');
 
             const tmpArgs = {h, m, s, now: new Date()};
@@ -1041,7 +1046,7 @@
 
             const onEnd = () => {
                 timerCard.classList.remove('is-speaking');
-                statusBadge.textContent = "Active";
+                statusBadgeText.textContent = "Active";
                 statusBadge.classList.remove('speaking');
             };
             const onError = (ev) => {
